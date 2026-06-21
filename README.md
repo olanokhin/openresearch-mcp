@@ -4,6 +4,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/openresearch-mcp)](https://pypi.org/project/openresearch-mcp/)
 [![License](https://img.shields.io/pypi/l/openresearch-mcp)](LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/olanokhin/openresearch-mcp/ci.yml?branch=main&label=CI)](https://github.com/olanokhin/openresearch-mcp/actions/workflows/ci.yml)
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-listed-blue)](https://registry.modelcontextprotocol.io)
 
 Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, OpenCode, Open WebUI, or any MCP-compatible agent — no API keys required.
 
@@ -22,11 +23,17 @@ Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, O
 
 ## Install
 
+### From the MCP Registry (recommended for Claude Desktop / Cursor)
+
+The server is listed on the [official MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.olanokhin/openresearch-mcp`. Registry-aware clients can discover and install it without manual config — search for `openresearch-mcp` in your client's MCP browser.
+
+### From PyPI
+
 ```bash
-# Recommended — zero install, always isolated
+# Zero install, always isolated — recommended for manual use
 uvx openresearch-mcp
 
-# Or install globally with pip
+# Or install globally
 pip install openresearch-mcp
 openresearch-mcp
 ```
@@ -36,12 +43,10 @@ By default the server starts on `http://0.0.0.0:8000/mcp` (Streamable HTTP, MCP 
 ## Update
 
 ```bash
+# uvx
 uvx --refresh openresearch-mcp
-```
 
-With pip:
-
-```bash
+# pip
 pip install --upgrade openresearch-mcp
 ```
 
