@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openresearch-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Zero-auth multi-source research MCP server — web, GitHub, Hacker News, Stack Overflow, arXiv, Semantic Scholar, YouTube transcripts, and more."
 readme = "README.md"
 license = { text = "MIT" }
