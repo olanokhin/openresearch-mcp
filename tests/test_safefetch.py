@@ -76,6 +76,8 @@ class TestValidateUrl:
         "0.0.0.0",            # unspecified
         "::1",                # IPv6 loopback
         "fe80::1",            # IPv6 link-local
+        "::ffff:10.0.0.5",    # IPv4-mapped private
+        "64:ff9b::a00:5",     # NAT64 for 10.0.0.5
     ])
     def test_rejects_internal_addresses(self, ip):
         with patch("openresearch_mcp.safefetch.socket.getaddrinfo", _resolver({"evil.test": [ip]})):
@@ -105,6 +107,11 @@ class TestSafeGet:
              patch("openresearch_mcp.safefetch.requests.get", return_value=FakeResp(chunks=[b"hello ", b"world"])):
             resp = safe_get("https://example.com/x", timeout=5)
         assert resp.content == b"hello world"
+
+    @pytest.mark.integration
+    def test_real_public_fetch_exposes_peer_ip(self):
+        resp = safe_get("https://example.com/", timeout=10, max_bytes=256 * 1024)
+        assert b"Example Domain" in resp.content
 
     def test_rejects_oversized_content_length(self):
         big = FakeResp(headers={"Content-Length": "999999999"}, chunks=[b"x"])

@@ -17,6 +17,7 @@ ALLOWED_SCHEMES = {"http", "https"}
 MAX_REDIRECTS = 5
 MAX_DOWNLOAD_BYTES = 25 * 1024 * 1024  # 25 MiB — generous for academic PDFs
 _CHUNK = 64 * 1024
+_NAT64_WELL_KNOWN_PREFIX = ipaddress.ip_network("64:ff9b::/96")
 
 
 class UnsafeURLError(ValueError):
@@ -25,6 +26,11 @@ class UnsafeURLError(ValueError):
 
 def _ip_is_blocked(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     """Reject anything that isn't a normal public unicast address."""
+    if isinstance(ip, ipaddress.IPv6Address):
+        if ip.ipv4_mapped is not None:
+            return _ip_is_blocked(ip.ipv4_mapped)
+        if ip in _NAT64_WELL_KNOWN_PREFIX:
+            return True
     return (
         ip.is_private
         or ip.is_loopback

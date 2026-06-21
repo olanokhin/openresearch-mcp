@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openresearch-mcp"
-version = "0.1.6"
+version = "0.1.7"
 description = "Zero-auth multi-source research MCP server — web, GitHub, Hacker News, Stack Overflow, arXiv, OpenAlex, YouTube transcripts, and more."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -36,12 +36,12 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "fastmcp>=2.0",
+    "fastmcp>=3.4.2,<4",
     "requests>=2.32",
     "beautifulsoup4>=4.12",
     # Scraping libs change behavior across majors — cap to the tested major.
     "ddgs>=9.0,<10",
-    "pypdf>=5.0",
+    "pypdf>=5.0,<6",
     "youtube-transcript-api>=1.0,<2",
 ]
 
@@ -61,6 +61,9 @@ packages = ["src/openresearch_mcp"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "integration: tests that call real public network services",
+]
 
 [tool.uv]
 dev-dependencies = ["pytest", "pytest-asyncio", "httpx"]
