@@ -10,39 +10,42 @@ from openresearch_mcp.tools.web import _normalize_pdf_url, read_pdf, read_url, w
 
 
 class TestWebSearch:
+    def _mock_ddgs(self, hits: list) -> MagicMock:
+        m = MagicMock()
+        m.return_value.text.return_value = hits
+        return m
+
     def test_returns_formatted_results(self):
         hits = [{"title": "MCP Guide", "href": "https://example.com", "body": "Snippet text"}]
-        with patch("openresearch_mcp.tools.web.DDGS") as mock_ddgs:
-            mock_ddgs.return_value.__enter__.return_value.text.return_value = hits
+        with patch("openresearch_mcp.tools.web.DDGS", self._mock_ddgs(hits)):
             result = web_search("mcp python")
         assert "MCP Guide" in result
         assert "https://example.com" in result
         assert "Snippet text" in result
 
     def test_no_results(self):
-        with patch("openresearch_mcp.tools.web.DDGS") as mock_ddgs:
-            mock_ddgs.return_value.__enter__.return_value.text.return_value = []
+        with patch("openresearch_mcp.tools.web.DDGS", self._mock_ddgs([])):
             assert web_search("xyzzy nonsense") == "No results found."
 
     def test_max_results_clamped_to_20(self):
         with patch("openresearch_mcp.tools.web.DDGS") as mock_ddgs:
-            mock_ddgs.return_value.__enter__.return_value.text.return_value = []
+            mock_ddgs.return_value.text.return_value = []
             web_search("query", max_results=999)
-            call = mock_ddgs.return_value.__enter__.return_value.text.call_args
+            call = mock_ddgs.return_value.text.call_args
             assert call[1]["max_results"] == 20
 
     def test_site_parameter_prepends_operator(self):
         with patch("openresearch_mcp.tools.web.DDGS") as mock_ddgs:
-            mock_ddgs.return_value.__enter__.return_value.text.return_value = []
+            mock_ddgs.return_value.text.return_value = []
             web_search("transformer attention", site="arxiv.org")
-            call = mock_ddgs.return_value.__enter__.return_value.text.call_args
+            call = mock_ddgs.return_value.text.call_args
             assert call[0][0] == "site:arxiv.org transformer attention"
 
     def test_no_site_leaves_query_unchanged(self):
         with patch("openresearch_mcp.tools.web.DDGS") as mock_ddgs:
-            mock_ddgs.return_value.__enter__.return_value.text.return_value = []
+            mock_ddgs.return_value.text.return_value = []
             web_search("transformer attention")
-            call = mock_ddgs.return_value.__enter__.return_value.text.call_args
+            call = mock_ddgs.return_value.text.call_args
             assert call[0][0] == "transformer attention"
 
 
@@ -128,3 +131,26 @@ class TestReadPdf:
              patch("openresearch_mcp.tools.web.PdfReader", return_value=self._reader("")):
             result = read_pdf("https://example.com/paper.pdf")
         assert "No text could be extracted" in result
+
+    def test_http_error_returns_string(self):
+        r = MagicMock()
+        r.raise_for_status.side_effect = req_lib.HTTPError("403 Forbidden")
+        with patch("openresearch_mcp.tools.web.requests.get", return_value=r):
+            result = read_pdf("https://example.com/paper.pdf")
+        assert "Could not fetch PDF" in result
+        assert "403" in result
+
+    def test_non_pdf_content_type_returns_string(self):
+        r = MagicMock()
+        r.raise_for_status.return_value = None
+        r.headers = {"content-type": "text/html"}
+        r.content = b"<html>not a pdf</html>"
+        with patch("openresearch_mcp.tools.web.requests.get", return_value=r):
+            result = read_pdf("https://example.com/notapdf")
+        assert "did not return a PDF" in result
+
+    def test_corrupt_pdf_returns_string(self):
+        with patch("openresearch_mcp.tools.web.requests.get", return_value=self._pdf_resp()), \
+             patch("openresearch_mcp.tools.web.PdfReader", side_effect=Exception("bad pdf")):
+            result = read_pdf("https://example.com/corrupt.pdf")
+        assert "Could not parse PDF" in result

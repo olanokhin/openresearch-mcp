@@ -104,7 +104,7 @@ mcp.tool(
 
 
 _PROBES: list[tuple[str, str]] = [
-    ("duckduckgo",       "https://duckduckgo.com/?q=test&format=json"),
+    ("duckduckgo",       "https://lite.duckduckgo.com/lite/"),
     ("github",           "https://api.github.com/rate_limit"),
     ("hacker_news",      "https://hn.algolia.com/api/v1/search?query=test&hitsPerPage=1"),
     ("stackoverflow",    "https://api.stackexchange.com/2.3/info?site=stackoverflow"),

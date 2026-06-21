@@ -24,8 +24,7 @@ def web_search(query: str, max_results: int = 5, site: str | None = None) -> str
     if site:
         query = f"site:{site} {query}"
     max_results = max(1, min(max_results, 20))
-    with DDGS() as ddgs:
-        results = list(ddgs.text(query, max_results=max_results))
+    results = list(DDGS().text(query, max_results=max_results))
     return "\n\n".join(
         f"{r.get('title')}\n{r.get('href')}\n{r.get('body')}" for r in results
     ) or "No results found."
@@ -67,14 +66,22 @@ def read_pdf(url: str) -> str:
         url: URL to a PDF file or arXiv paper page.
     """
     pdf_url = _normalize_pdf_url(url)
-    response = requests.get(pdf_url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
-    response.raise_for_status()
+    try:
+        response = requests.get(pdf_url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        return f"Could not fetch PDF ({exc}). Check the URL and try again."
+    except requests.RequestException as exc:
+        return f"Network error fetching PDF: {exc}"
 
     content_type = response.headers.get("content-type", "").lower()
     if "pdf" not in content_type and not pdf_url.lower().endswith(".pdf"):
-        raise ValueError(f"URL did not return a PDF: {pdf_url}")
+        return f"URL did not return a PDF (content-type: {content_type}): {pdf_url}"
 
-    reader = PdfReader(BytesIO(response.content))
+    try:
+        reader = PdfReader(BytesIO(response.content))
+    except Exception as exc:
+        return f"Could not parse PDF: {exc}"
     chunks = []
     for i, page in enumerate(reader.pages, 1):
         text = (page.extract_text() or "").strip()
