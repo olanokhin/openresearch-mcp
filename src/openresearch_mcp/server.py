@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import time
+from importlib.metadata import version as _pkg_version
 
 import requests as _requests
 from fastmcp import FastMCP
@@ -30,6 +31,7 @@ _READ_ONLY_WEB = ToolAnnotations(
 
 mcp = FastMCP(
     name="openresearch-mcp",
+    version=_pkg_version("openresearch-mcp"),
     instructions=(
         "Zero-auth multi-source research server. All tools are read-only and call external services — "
         "no API keys required out of the box.\n\n"
