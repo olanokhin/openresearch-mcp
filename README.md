@@ -40,6 +40,11 @@ openresearch-mcp
 
 By default the server starts on `http://0.0.0.0:8000/mcp` (Streamable HTTP, MCP 1.1+).
 
+```bash
+# Custom port
+MCP_PORT=9000 uvx openresearch-mcp
+```
+
 ## Update
 
 ```bash
