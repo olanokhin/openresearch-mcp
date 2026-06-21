@@ -170,3 +170,5 @@ curl http://localhost:8000/health
 ## License
 
 Apache 2.0
+
+<!-- mcp-name: io.github.olanokhin/openresearch-mcp -->
