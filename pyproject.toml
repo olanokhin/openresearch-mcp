@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openresearch-mcp"
-version = "0.1.1"
+version = "0.1.2"
 description = "Zero-auth multi-source research MCP server — web, GitHub, Hacker News, Stack Overflow, arXiv, Semantic Scholar, YouTube transcripts, and more."
 readme = "README.md"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 requires-python = ">=3.11"
 authors = [{ name = "Alex Anokhin", email = "olanokhin@gmail.com" }]
 keywords = [
@@ -26,7 +26,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

@@ -169,4 +169,4 @@ curl http://localhost:8000/health
 
 ## License
 
-MIT
+Apache 2.0
