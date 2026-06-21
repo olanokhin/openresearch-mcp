@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "openresearch-mcp"
+version = "0.1.0"
+description = "Zero-auth multi-source research MCP server — web, GitHub, Hacker News, Stack Overflow, arXiv, Semantic Scholar, YouTube transcripts, and more."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=2.0",
+    "requests>=2.32",
+    "beautifulsoup4>=4.12",
+    "ddgs>=9.0",
+    "pypdf>=5.0",
+    "youtube-transcript-api>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio", "httpx"]
+
+[project.scripts]
+openresearch-mcp = "openresearch_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/openresearch_mcp"]
+
+[tool.uv]
+dev-dependencies = ["pytest", "pytest-asyncio", "httpx"]
