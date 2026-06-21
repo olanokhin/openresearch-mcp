@@ -42,7 +42,10 @@ By default the server starts on `http://0.0.0.0:8000/mcp` (Streamable HTTP, MCP 
 
 ```bash
 # Custom port
-MCP_PORT=9000 uvx openresearch-mcp
+uvx openresearch-mcp --port 9000
+
+# Custom host and port
+uvx openresearch-mcp --host 127.0.0.1 --port 9000
 ```
 
 ## Update
@@ -67,8 +70,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
   "mcpServers": {
     "openresearch": {
       "command": "uvx",
-      "args": ["openresearch-mcp"],
-      "env": { "MCP_TRANSPORT": "stdio" }
+      "args": ["openresearch-mcp", "--stdio"]
     }
   }
 }
@@ -85,8 +87,7 @@ Create or edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per-project)
   "mcpServers": {
     "openresearch": {
       "command": "uvx",
-      "args": ["openresearch-mcp"],
-      "env": { "MCP_TRANSPORT": "stdio" }
+      "args": ["openresearch-mcp", "--stdio"]
     }
   }
 }
@@ -130,9 +131,8 @@ Or in Claude Desktop config:
   "mcpServers": {
     "openresearch": {
       "command": "uvx",
-      "args": ["openresearch-mcp"],
+      "args": ["openresearch-mcp", "--stdio"],
       "env": {
-        "MCP_TRANSPORT": "stdio",
         "GITHUB_TOKEN": "ghp_...",
         "OPENALEX_EMAIL": "you@example.com"
       }

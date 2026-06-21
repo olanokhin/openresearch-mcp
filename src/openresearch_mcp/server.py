@@ -144,9 +144,18 @@ async def health(request: Request) -> JSONResponse:
 
 
 def main() -> None:
-    transport = os.getenv("MCP_TRANSPORT", "streamable-http")
-    host = os.getenv("MCP_HOST", "0.0.0.0")
-    port = int(os.getenv("MCP_PORT", "8000"))
+    import argparse
+
+    parser = argparse.ArgumentParser(description="OpenResearch MCP server")
+    parser.add_argument("--port", type=int, default=None, help="Port to listen on (default: 8000)")
+    parser.add_argument("--host", default=None, help="Host to bind to (default: 0.0.0.0)")
+    parser.add_argument("--stdio", action="store_true", help="Run in stdio mode (for Claude Desktop / Cursor)")
+    args = parser.parse_args()
+
+    # CLI args take precedence over env vars
+    transport = "stdio" if args.stdio else os.getenv("MCP_TRANSPORT", "streamable-http")
+    host = args.host or os.getenv("MCP_HOST", "0.0.0.0")
+    port = args.port or int(os.getenv("MCP_PORT", "8000"))
 
     if transport == "stdio":
         mcp.run(transport="stdio")
