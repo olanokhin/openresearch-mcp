@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from io import BytesIO
 from urllib.parse import urlparse
 
@@ -10,7 +11,13 @@ from bs4 import BeautifulSoup
 from ddgs import DDGS
 from pypdf import PdfReader
 
+from openresearch_mcp.formatting import format_untrusted
+from openresearch_mcp.safefetch import UnsafeURLError, safe_get
+
+logger = logging.getLogger(__name__)
+
 MAX_TEXT_CHARS = 20_000
+MAX_PDF_PAGES = 50
 
 
 def web_search(query: str, max_results: int = 5, site: str | None = None) -> str:
@@ -25,9 +32,10 @@ def web_search(query: str, max_results: int = 5, site: str | None = None) -> str
         query = f"site:{site} {query}"
     max_results = max(1, min(max_results, 20))
     results = list(DDGS().text(query, max_results=max_results))
-    return "\n\n".join(
+    body = "\n\n".join(
         f"{r.get('title')}\n{r.get('href')}\n{r.get('body')}" for r in results
-    ) or "No results found."
+    )
+    return format_untrusted("web search", body) if body else "No results found."
 
 
 def read_url(url: str) -> str:
@@ -36,17 +44,26 @@ def read_url(url: str) -> str:
     Args:
         url: Full URL to fetch.
     """
-    response = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
     try:
+        response = safe_get(
+            url, timeout=20, headers={"User-Agent": "Mozilla/5.0"}, max_bytes=10 * 1024 * 1024
+        )
         response.raise_for_status()
+    except UnsafeURLError as exc:
+        logger.warning("read_url refused %s: %s", url, exc)
+        return "Refused to fetch URL: address not permitted."
     except requests.HTTPError as exc:
+        # HTTP status (404/403/…) is about the target the caller already knows — safe to surface.
         return f"Could not read page ({exc}). Try a different URL."
+    except requests.RequestException as exc:
+        logger.warning("read_url network error %s: %s", url, exc)
+        return "Network error fetching page."
 
     soup = BeautifulSoup(response.text, "html.parser")
     for tag in soup(["script", "style", "nav", "footer", "header"]):
         tag.decompose()
     lines = [line.strip() for line in soup.get_text("\n").splitlines() if line.strip()]
-    return "\n".join(lines)[:MAX_TEXT_CHARS]
+    return format_untrusted("web page", "\n".join(lines)[:MAX_TEXT_CHARS])
 
 
 def _normalize_pdf_url(url: str) -> str:
@@ -67,12 +84,16 @@ def read_pdf(url: str) -> str:
     """
     pdf_url = _normalize_pdf_url(url)
     try:
-        response = requests.get(pdf_url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+        response = safe_get(pdf_url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
         response.raise_for_status()
+    except UnsafeURLError as exc:
+        logger.warning("read_pdf refused %s: %s", pdf_url, exc)
+        return "Refused to fetch PDF: address not permitted."
     except requests.HTTPError as exc:
         return f"Could not fetch PDF ({exc}). Check the URL and try again."
     except requests.RequestException as exc:
-        return f"Network error fetching PDF: {exc}"
+        logger.warning("read_pdf network error %s: %s", pdf_url, exc)
+        return "Network error fetching PDF."
 
     content_type = response.headers.get("content-type", "").lower()
     if "pdf" not in content_type and not pdf_url.lower().endswith(".pdf"):
@@ -83,7 +104,7 @@ def read_pdf(url: str) -> str:
     except Exception as exc:
         return f"Could not parse PDF: {exc}"
     chunks = []
-    for i, page in enumerate(reader.pages, 1):
+    for i, page in enumerate(reader.pages[:MAX_PDF_PAGES], 1):
         text = (page.extract_text() or "").strip()
         if text:
             chunks.append(f"--- Page {i} ---\n{text}")
@@ -91,4 +112,6 @@ def read_pdf(url: str) -> str:
             break
 
     text = "\n\n".join(chunks).strip()
-    return text[:MAX_TEXT_CHARS] if text else "No text could be extracted from this PDF."
+    if not text:
+        return "No text could be extracted from this PDF."
+    return format_untrusted("PDF", text[:MAX_TEXT_CHARS])

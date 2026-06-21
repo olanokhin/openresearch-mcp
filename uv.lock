@@ -1029,7 +1029,7 @@ wheels = [
 
 [[package]]
 name = "openresearch-mcp"
-version = "0.1.5"
+version = "0.1.6"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -1057,14 +1057,14 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.12" },
-    { name = "ddgs", specifier = ">=9.0" },
+    { name = "ddgs", specifier = ">=9.0,<10" },
     { name = "fastmcp", specifier = ">=2.0" },
     { name = "httpx", marker = "extra == 'dev'" },
     { name = "pypdf", specifier = ">=5.0" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pytest-asyncio", marker = "extra == 'dev'" },
     { name = "requests", specifier = ">=2.32" },
-    { name = "youtube-transcript-api", specifier = ">=1.0" },
+    { name = "youtube-transcript-api", specifier = ">=1.0,<2" },
 ]
 provides-extras = ["dev"]
 

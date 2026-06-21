@@ -7,6 +7,8 @@ import os
 import requests
 from bs4 import BeautifulSoup
 
+from openresearch_mcp.formatting import format_untrusted
+
 
 def search_hacker_news(query: str, max_results: int = 10) -> str:
     """Search Hacker News stories and discussions via Algolia API. No API key required.
@@ -31,7 +33,8 @@ def search_hacker_news(query: str, max_results: int = 10) -> str:
             f"HN: {hn_url}\nURL: {hit.get('url', hn_url)}\n"
             f"Points: {hit.get('points', 0)} | Comments: {hit.get('num_comments', 0)}"
         )
-    return "\n\n".join(lines) or "No results found."
+    body = "\n\n".join(lines)
+    return format_untrusted("Hacker News", body) if body else "No results found."
 
 
 def search_stackoverflow(query: str, max_results: int = 5) -> str:
@@ -63,7 +66,8 @@ def search_stackoverflow(query: str, max_results: int = 5) -> str:
             f"{item.get('title', 'Untitled')}\n{item.get('link', '')}\n"
             f"Score: {item.get('score', 0)} | Answers: {item.get('answer_count', 0)}\n{body}"
         )
-    return "\n\n".join(lines) or "No results found."
+    out = "\n\n".join(lines)
+    return format_untrusted("Stack Overflow", out) if out else "No results found."
 
 
 def _reconstruct_abstract(inv_idx: dict | None) -> str:
@@ -124,4 +128,5 @@ def search_openalex(query: str, max_results: int = 5) -> str:
         if abstract:
             entry += f"\nAbstract: {abstract[:600]}"
         lines.append(entry)
-    return "\n\n".join(lines) or "No results found."
+    body = "\n\n".join(lines)
+    return format_untrusted("OpenAlex", body) if body else "No results found."

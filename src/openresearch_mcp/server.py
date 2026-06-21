@@ -132,15 +132,32 @@ async def _probe(name: str, url: str) -> tuple[str, dict]:
         return name, {"status": "error", "error": str(exc)[:120], "latency_ms": ms}
 
 
-@mcp.custom_route("/health", methods=["GET"])
-async def health(request: Request) -> JSONResponse:
+_HEALTH_TTL = 10.0  # seconds — cap outbound-probe amplification from unauthenticated /health
+_health_cache: dict[str, object] = {"at": 0.0, "payload": None, "status": 503}
+_health_lock = asyncio.Lock()
+
+
+async def _compute_health() -> tuple[dict, int]:
     results = await asyncio.gather(*[_probe(n, u) for n, u in _PROBES])
     sources = dict(results)
     any_ok = any(v["status"] == "ok" for v in sources.values())
     all_ok = all(v["status"] == "ok" for v in sources.values())
     overall = "ok" if all_ok else ("degraded" if any_ok else "down")
-    http_status = 200 if any_ok else 503
-    return JSONResponse({"status": overall, "sources": sources}, status_code=http_status)
+    return {"status": overall, "sources": sources}, (200 if any_ok else 503)
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health(request: Request) -> JSONResponse:
+    now = time.monotonic()
+    # Serve a cached result so repeated/unauthenticated hits don't fan out 6 probes each.
+    if _health_cache["payload"] is not None and (now - _health_cache["at"]) < _HEALTH_TTL:
+        return JSONResponse(_health_cache["payload"], status_code=_health_cache["status"])
+    async with _health_lock:
+        now = time.monotonic()
+        if _health_cache["payload"] is None or (now - _health_cache["at"]) >= _HEALTH_TTL:
+            payload, status = await _compute_health()
+            _health_cache.update(at=time.monotonic(), payload=payload, status=status)
+    return JSONResponse(_health_cache["payload"], status_code=_health_cache["status"])
 
 
 def main() -> None:
@@ -148,13 +165,15 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description="OpenResearch MCP server")
     parser.add_argument("--port", type=int, default=None, help="Port to listen on (default: 8000)")
-    parser.add_argument("--host", default=None, help="Host to bind to (default: 0.0.0.0)")
+    parser.add_argument("--host", default=None, help="Host to bind to (default: 127.0.0.1)")
     parser.add_argument("--stdio", action="store_true", help="Run in stdio mode (for Claude Desktop / Cursor)")
     args = parser.parse_args()
 
     # CLI args take precedence over env vars
     transport = "stdio" if args.stdio else os.getenv("MCP_TRANSPORT", "streamable-http")
-    host = args.host or os.getenv("MCP_HOST", "0.0.0.0")
+    # Default to loopback so a local `uvx openresearch-mcp` is not exposed to the LAN.
+    # Containers/public deployments opt in explicitly via MCP_HOST=0.0.0.0 (see Dockerfile).
+    host = args.host or os.getenv("MCP_HOST", "127.0.0.1")
     port = args.port or int(os.getenv("MCP_PORT", "8000"))
 
     if transport == "stdio":

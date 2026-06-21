@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests as req_lib
 
+from openresearch_mcp.safefetch import UnsafeURLError
 from openresearch_mcp.tools.web import _normalize_pdf_url, read_pdf, read_url, web_search
 
 
@@ -57,13 +58,13 @@ class TestReadUrl:
         return r
 
     def test_extracts_body_text(self):
-        with patch("openresearch_mcp.tools.web.requests.get", return_value=self._resp(
+        with patch("openresearch_mcp.tools.web.safe_get", return_value=self._resp(
             "<html><body><p>Hello world</p></body></html>"
         )):
             assert "Hello world" in read_url("https://example.com")
 
     def test_strips_scripts_and_styles(self):
-        with patch("openresearch_mcp.tools.web.requests.get", return_value=self._resp(
+        with patch("openresearch_mcp.tools.web.safe_get", return_value=self._resp(
             "<html><body><p>Keep this</p><script>drop</script><style>drop</style></body></html>"
         )):
             result = read_url("https://example.com")
@@ -73,9 +74,18 @@ class TestReadUrl:
     def test_http_error_returns_message(self):
         r = MagicMock()
         r.raise_for_status.side_effect = req_lib.HTTPError("404 Not Found")
-        with patch("openresearch_mcp.tools.web.requests.get", return_value=r):
+        with patch("openresearch_mcp.tools.web.safe_get", return_value=r):
             result = read_url("https://example.com/gone")
         assert "Could not read page" in result
+
+    def test_unsafe_url_returns_message(self):
+        with patch("openresearch_mcp.tools.web.safe_get", side_effect=UnsafeURLError(
+            "host resolves to a blocked address (169.254.169.254)"
+        )):
+            result = read_url("http://169.254.169.254/latest/meta-data/")
+        assert "Refused to fetch URL" in result
+        # The resolved internal IP must NOT be echoed back to the caller (LLM02).
+        assert "169.254.169.254" not in result
 
 
 class TestNormalizePdfUrl:
@@ -113,21 +123,21 @@ class TestReadPdf:
         return reader
 
     def test_extracts_text_from_pages(self):
-        with patch("openresearch_mcp.tools.web.requests.get", return_value=self._pdf_resp()), \
+        with patch("openresearch_mcp.tools.web.safe_get", return_value=self._pdf_resp()), \
              patch("openresearch_mcp.tools.web.PdfReader", return_value=self._reader("Page one content")):
             result = read_pdf("https://arxiv.org/abs/2301.00001")
         assert "Page one content" in result
         assert "Page 1" in result
 
     def test_multiple_pages_joined(self):
-        with patch("openresearch_mcp.tools.web.requests.get", return_value=self._pdf_resp()), \
+        with patch("openresearch_mcp.tools.web.safe_get", return_value=self._pdf_resp()), \
              patch("openresearch_mcp.tools.web.PdfReader", return_value=self._reader("First", "Second")):
             result = read_pdf("https://example.com/paper.pdf")
         assert "First" in result
         assert "Second" in result
 
     def test_empty_pages_returns_fallback(self):
-        with patch("openresearch_mcp.tools.web.requests.get", return_value=self._pdf_resp()), \
+        with patch("openresearch_mcp.tools.web.safe_get", return_value=self._pdf_resp()), \
              patch("openresearch_mcp.tools.web.PdfReader", return_value=self._reader("")):
             result = read_pdf("https://example.com/paper.pdf")
         assert "No text could be extracted" in result
@@ -135,7 +145,7 @@ class TestReadPdf:
     def test_http_error_returns_string(self):
         r = MagicMock()
         r.raise_for_status.side_effect = req_lib.HTTPError("403 Forbidden")
-        with patch("openresearch_mcp.tools.web.requests.get", return_value=r):
+        with patch("openresearch_mcp.tools.web.safe_get", return_value=r):
             result = read_pdf("https://example.com/paper.pdf")
         assert "Could not fetch PDF" in result
         assert "403" in result
@@ -145,12 +155,19 @@ class TestReadPdf:
         r.raise_for_status.return_value = None
         r.headers = {"content-type": "text/html"}
         r.content = b"<html>not a pdf</html>"
-        with patch("openresearch_mcp.tools.web.requests.get", return_value=r):
+        with patch("openresearch_mcp.tools.web.safe_get", return_value=r):
             result = read_pdf("https://example.com/notapdf")
         assert "did not return a PDF" in result
 
     def test_corrupt_pdf_returns_string(self):
-        with patch("openresearch_mcp.tools.web.requests.get", return_value=self._pdf_resp()), \
+        with patch("openresearch_mcp.tools.web.safe_get", return_value=self._pdf_resp()), \
              patch("openresearch_mcp.tools.web.PdfReader", side_effect=Exception("bad pdf")):
             result = read_pdf("https://example.com/corrupt.pdf")
         assert "Could not parse PDF" in result
+
+    def test_unsafe_url_returns_string(self):
+        with patch("openresearch_mcp.tools.web.safe_get", side_effect=UnsafeURLError(
+            "host resolves to a blocked address (10.0.0.5)"
+        )):
+            result = read_pdf("http://10.0.0.5/internal.pdf")
+        assert "Refused to fetch PDF" in result

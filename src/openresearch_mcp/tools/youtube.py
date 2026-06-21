@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from openresearch_mcp.formatting import format_untrusted
+
 MAX_TEXT_CHARS = 20_000
 
 
@@ -28,4 +30,5 @@ def get_youtube_transcript(url: str) -> str:
     except CouldNotRetrieveTranscript as exc:
         return f"Transcript unavailable: {exc}"
 
-    return " ".join(snippet.text for snippet in transcript)[:MAX_TEXT_CHARS]
+    text = " ".join(snippet.text for snippet in transcript)[:MAX_TEXT_CHARS]
+    return format_untrusted("YouTube transcript", text)

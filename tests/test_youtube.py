@@ -49,7 +49,7 @@ class TestGetYoutubeTranscript:
         with patch("youtube_transcript_api.YouTubeTranscriptApi") as mock_api:
             mock_api.return_value.fetch.return_value = _snippets("one", "two", "three")
             result = get_youtube_transcript(VIDEO_ID)
-        assert result == "one two three"
+        assert "one two three" in result
 
     def test_invalid_url_raises_value_error(self):
         with pytest.raises(ValueError, match="Cannot extract"):

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openresearch-mcp"
-version = "0.1.5"
+version = "0.1.6"
 description = "Zero-auth multi-source research MCP server — web, GitHub, Hacker News, Stack Overflow, arXiv, OpenAlex, YouTube transcripts, and more."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -39,9 +39,10 @@ dependencies = [
     "fastmcp>=2.0",
     "requests>=2.32",
     "beautifulsoup4>=4.12",
-    "ddgs>=9.0",
+    # Scraping libs change behavior across majors — cap to the tested major.
+    "ddgs>=9.0,<10",
     "pypdf>=5.0",
-    "youtube-transcript-api>=1.0",
+    "youtube-transcript-api>=1.0,<2",
 ]
 
 [project.urls]

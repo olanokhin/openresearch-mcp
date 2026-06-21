@@ -8,6 +8,8 @@ from urllib.parse import urlparse
 
 import requests
 
+from openresearch_mcp.formatting import format_untrusted
+
 GITHUB_API = "https://api.github.com"
 GITHUB_RAW = "https://raw.githubusercontent.com"
 MAX_TEXT_CHARS = 20_000
@@ -94,4 +96,4 @@ def read_repo(repo: str) -> str:
         except requests.RequestException:
             continue
 
-    return "\n".join(sections)[:MAX_TEXT_CHARS]
+    return format_untrusted("GitHub repository", "\n".join(sections)[:MAX_TEXT_CHARS])

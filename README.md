@@ -38,15 +38,17 @@ pip install openresearch-mcp
 openresearch-mcp
 ```
 
-By default the server starts on `http://0.0.0.0:8000/mcp` (Streamable HTTP, MCP 1.1+).
+By default the server starts on `http://127.0.0.1:8000/mcp` (Streamable HTTP, MCP 1.1+) — bound to loopback so it is not exposed to your local network. To expose it (e.g. in a container or behind a gateway), bind all interfaces explicitly:
 
 ```bash
 # Custom port
 uvx openresearch-mcp --port 9000
 
-# Custom host and port
-uvx openresearch-mcp --host 127.0.0.1 --port 9000
+# Bind all interfaces (only behind an auth/rate-limit gateway)
+uvx openresearch-mcp --host 0.0.0.0 --port 9000
 ```
+
+> **Note:** when binding beyond loopback, put an auth/rate-limit gateway in front. The server is zero-auth by design, and `read_url`/`read_pdf` fetch arbitrary URLs (private/link-local/loopback ranges are blocked to prevent SSRF, but rate limiting is your responsibility).
 
 ## Update
 
