@@ -1,4 +1,4 @@
-"""Smoke tests for search_hacker_news, search_stackoverflow, search_semantic_scholar."""
+"""Smoke tests for search_hacker_news, search_stackoverflow, search_openalex."""
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -6,8 +6,9 @@ from unittest.mock import MagicMock, patch
 import requests as req_lib
 
 from openresearch_mcp.tools.academic import (
+    _reconstruct_abstract,
     search_hacker_news,
-    search_semantic_scholar,
+    search_openalex,
     search_stackoverflow,
 )
 
@@ -63,64 +64,85 @@ class TestSearchStackOverflow:
             assert call[1]["params"]["pagesize"] == 10
 
 
-class TestSearchSemanticScholar:
+class TestReconstructAbstract:
+    def test_basic_reconstruction(self):
+        inv_idx = {"Hello": [0], "world": [1]}
+        assert _reconstruct_abstract(inv_idx) == "Hello world"
+
+    def test_out_of_order_keys(self):
+        inv_idx = {"second": [1], "first": [0], "third": [2]}
+        assert _reconstruct_abstract(inv_idx) == "first second third"
+
+    def test_word_at_multiple_positions(self):
+        inv_idx = {"the": [0, 2], "cat": [1], "sat": [3]}
+        assert _reconstruct_abstract(inv_idx) == "the cat the sat"
+
+    def test_none_returns_empty(self):
+        assert _reconstruct_abstract(None) == ""
+
+    def test_empty_dict_returns_empty(self):
+        assert _reconstruct_abstract({}) == ""
+
+
+def _openalex_work(**overrides) -> dict:
+    base = {
+        "title": "Attention Is All You Need",
+        "publication_year": 2017,
+        "doi": "https://doi.org/10.48550/arxiv.1706.03762",
+        "primary_location": {"landing_page_url": "https://doi.org/10.48550/arxiv.1706.03762"},
+        "open_access": {"oa_url": "https://arxiv.org/pdf/1706.03762"},
+        "authorships": [
+            {"author": {"display_name": "Vaswani"}},
+            {"author": {"display_name": "Shazeer"}},
+            {"author": {"display_name": "Parmar"}},
+            {"author": {"display_name": "Fourth Author"}},
+        ],
+        "abstract_inverted_index": {"The": [0], "dominant": [1], "model": [2]},
+    }
+    return {**base, **overrides}
+
+
+class TestSearchOpenAlex:
     def test_returns_paper_with_authors_and_abstract(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"data": [{
-            "title": "Attention Is All You Need",
-            "year": 2017,
-            "url": "https://semanticscholar.org/paper/1",
-            "openAccessPdf": {"url": "https://arxiv.org/pdf/1706.03762"},
-            "authors": [{"name": "Vaswani"}, {"name": "Shazeer"}, {"name": "Parmar"}, {"name": "Fourth Author"}],
-            "abstract": "The dominant sequence model is based on RNNs.",
-        }]})):
-            result = search_semantic_scholar("transformer attention")
+        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok(
+            {"results": [_openalex_work()]}
+        )):
+            result = search_openalex("transformer attention")
         assert "Attention Is All You Need" in result
         assert "2017" in result
         assert "Vaswani" in result
+        assert "Shazeer" in result
         assert "https://arxiv.org/pdf/1706.03762" in result
-        assert "dominant sequence model" in result
+        assert "dominant" in result
         assert "Fourth Author" not in result  # only first 3 authors shown
 
     def test_no_open_access_pdf_omits_pdf_line(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"data": [{
-            "title": "Paywalled Paper",
-            "year": 2020,
-            "url": "https://semanticscholar.org/paper/2",
-            "openAccessPdf": None,
-            "authors": [],
-            "abstract": "No public PDF.",
-        }]})):
-            result = search_semantic_scholar("paywalled topic")
-        assert "Paywalled Paper" in result
+        work = _openalex_work(open_access={"oa_url": None})
+        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"results": [work]})):
+            result = search_openalex("paywalled topic")
+        assert "Attention Is All You Need" in result
         assert "PDF:" not in result
 
+    def test_no_abstract_omits_abstract_line(self):
+        work = _openalex_work(abstract_inverted_index=None)
+        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"results": [work]})):
+            result = search_openalex("no abstract paper")
+        assert "Abstract:" not in result
+
     def test_no_results(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"data": []})):
-            assert search_semantic_scholar("xyzzy") == "No results found."
+        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"results": []})):
+            assert search_openalex("xyzzy") == "No results found."
 
-    def test_429_falls_back_to_duckduckgo(self):
-        mock_429 = MagicMock()
-        mock_429.status_code = 429
-        err = req_lib.HTTPError(response=mock_429)
-        bad_resp = MagicMock()
-        bad_resp.raise_for_status.side_effect = err
+    def test_max_results_clamped_to_10(self):
+        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"results": []})) as mock_get:
+            search_openalex("query", max_results=999)
+            call = mock_get.call_args
+            assert call[1]["params"]["per_page"] == 10
 
-        ddg_hits = [{"title": "Scholar via DDG", "href": "https://semanticscholar.org/1", "body": "DDG snippet"}]
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=bad_resp), \
-             patch("openresearch_mcp.tools.academic.DDGS") as mock_ddgs:
-            mock_ddgs.return_value.__enter__.return_value.text.return_value = ddg_hits
-            result = search_semantic_scholar("neural networks")
-        assert "Scholar via DDG" in result
-        assert "DDG snippet" in result
-
-    def test_429_empty_ddg_fallback_returns_message(self):
-        mock_429 = MagicMock()
-        mock_429.status_code = 429
-        bad_resp = MagicMock()
-        bad_resp.raise_for_status.side_effect = req_lib.HTTPError(response=mock_429)
-
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=bad_resp), \
-             patch("openresearch_mcp.tools.academic.DDGS") as mock_ddgs:
-            mock_ddgs.return_value.__enter__.return_value.text.return_value = []
-            result = search_semantic_scholar("neural networks")
-        assert "rate limited" in result.lower()
+    def test_openalex_email_in_user_agent(self):
+        import os
+        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"results": []})) as mock_get, \
+             patch.dict(os.environ, {"OPENALEX_EMAIL": "test@example.com"}):
+            search_openalex("query")
+            headers = mock_get.call_args[1]["headers"]
+            assert "test@example.com" in headers["User-Agent"]

@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
+import time
 
+import requests as _requests
 from fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from openresearch_mcp.tools.academic import (
     search_hacker_news,
-    search_semantic_scholar,
+    search_openalex,
     search_stackoverflow,
 )
 from openresearch_mcp.tools.github import read_repo
@@ -34,8 +39,8 @@ mcp = FastMCP(
         "• read_url — fetch the full text of a specific webpage once you already have a URL.\n"
         "• read_pdf — extract text from any PDF or arXiv paper; accepts /abs/, /pdf/, and /html/ arXiv URLs "
         "interchangeably.\n"
-        "• search_semantic_scholar — preferred for academic papers, abstracts, citations, and open-access PDFs; "
-        "auto-falls back to DuckDuckGo snippets on 429.\n"
+        "• search_openalex — preferred for academic papers, books, and datasets; 250M+ works via OpenAlex, "
+        "zero rate limiting on free tier. Set OPENALEX_EMAIL for the polite pool.\n"
         "• search_hacker_news — tech community discussion, startup news, engineering war stories.\n"
         "• search_stackoverflow — programming Q&A; use when looking for code solutions or error messages.\n"
         "• read_repo — explore a public GitHub repository: returns metadata, README, file tree, and key "
@@ -43,7 +48,7 @@ mcp = FastMCP(
         "• get_youtube_transcript — fetch captions from a YouTube video for summarization or citation; "
         "accepts full URLs or bare 11-char video IDs.\n\n"
         "Optional env vars to increase rate limits: GITHUB_TOKEN (60→5k req/hr), "
-        "SEMANTIC_SCHOLAR_KEY (100 req/5min→1 req/sec), STACKEXCHANGE_KEY (higher SO quota)."
+        "OPENALEX_EMAIL (polite pool, higher limits), STACKEXCHANGE_KEY (higher SO quota)."
     ),
 )
 
@@ -84,16 +89,56 @@ mcp.tool(
 )(search_stackoverflow)
 
 mcp.tool(
-    title="Search Semantic Scholar",
+    title="Search OpenAlex",
     tags={"search", "academic"},
     annotations=_READ_ONLY_WEB,
-)(search_semantic_scholar)
+)(search_openalex)
 
 mcp.tool(
     title="Get YouTube Transcript",
     tags={"content", "video"},
     annotations=_READ_ONLY_WEB,
 )(get_youtube_transcript)
+
+
+_PROBES: list[tuple[str, str]] = [
+    ("duckduckgo",       "https://duckduckgo.com/?q=test&format=json"),
+    ("github",           "https://api.github.com/rate_limit"),
+    ("hacker_news",      "https://hn.algolia.com/api/v1/search?query=test&hitsPerPage=1"),
+    ("stackoverflow",    "https://api.stackexchange.com/2.3/info?site=stackoverflow"),
+    ("openalex",         "https://api.openalex.org/works?search=test&per_page=1&select=id"),
+    ("youtube",          "https://www.youtube.com"),
+]
+
+_PROBE_HEADERS = {"User-Agent": "openresearch-mcp/healthcheck"}
+
+
+async def _probe(name: str, url: str) -> tuple[str, dict]:
+    start = time.monotonic()
+    try:
+        resp = await asyncio.to_thread(
+            _requests.get, url, timeout=5, headers=_PROBE_HEADERS, allow_redirects=True
+        )
+        ms = round((time.monotonic() - start) * 1000)
+        # 429 means the service is up but rate-limiting us — report as reachable
+        if resp.status_code == 429:
+            return name, {"status": "ok", "note": "rate_limited", "latency_ms": ms}
+        resp.raise_for_status()
+        return name, {"status": "ok", "latency_ms": ms}
+    except Exception as exc:
+        ms = round((time.monotonic() - start) * 1000)
+        return name, {"status": "error", "error": str(exc)[:120], "latency_ms": ms}
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health(request: Request) -> JSONResponse:
+    results = await asyncio.gather(*[_probe(n, u) for n, u in _PROBES])
+    sources = dict(results)
+    any_ok = any(v["status"] == "ok" for v in sources.values())
+    all_ok = all(v["status"] == "ok" for v in sources.values())
+    overall = "ok" if all_ok else ("degraded" if any_ok else "down")
+    http_status = 200 if any_ok else 503
+    return JSONResponse({"status": overall, "sources": sources}, status_code=http_status)
 
 
 def main() -> None:

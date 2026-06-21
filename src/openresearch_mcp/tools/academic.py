@@ -6,7 +6,6 @@ import os
 
 import requests
 from bs4 import BeautifulSoup
-from ddgs import DDGS
 
 
 def search_hacker_news(query: str, max_results: int = 10) -> str:
@@ -67,50 +66,62 @@ def search_stackoverflow(query: str, max_results: int = 5) -> str:
     return "\n\n".join(lines) or "No results found."
 
 
-def search_semantic_scholar(query: str, max_results: int = 5) -> str:
-    """Search Semantic Scholar for academic papers with abstracts and open-access PDFs.
+def _reconstruct_abstract(inv_idx: dict | None) -> str:
+    """Reconstruct plain text from OpenAlex abstract_inverted_index format."""
+    if not inv_idx:
+        return ""
+    length = max(pos for positions in inv_idx.values() for pos in positions) + 1
+    words: list[str] = [""] * length
+    for word, positions in inv_idx.items():
+        for pos in positions:
+            words[pos] = word
+    return " ".join(words)
 
-    No API key required (100 req/5min). Set SEMANTIC_SCHOLAR_KEY env var for higher limits.
-    Falls back to DuckDuckGo snippet search on 429.
+
+def search_openalex(query: str, max_results: int = 5) -> str:
+    """Search OpenAlex for academic papers, books, and datasets. 250M+ works, no API key required.
+
+    Set OPENALEX_EMAIL env var to join the polite pool for higher rate limits.
 
     Args:
         query: Search query string.
-        max_results: Number of papers to return (1–10, default 5).
+        max_results: Number of works to return (1–10, default 5).
     """
     max_results = max(1, min(max_results, 10))
-    headers = {}
-    key = os.getenv("SEMANTIC_SCHOLAR_KEY")
-    if key:
-        headers["x-api-key"] = key
+    email = os.getenv("OPENALEX_EMAIL", "")
+    user_agent = f"openresearch-mcp (mailto:{email})" if email else "openresearch-mcp"
 
-    try:
-        r = requests.get(
-            "https://api.semanticscholar.org/graph/v1/paper/search",
-            params={"query": query, "fields": "title,abstract,year,url,openAccessPdf,authors", "limit": max_results},
-            headers=headers,
-            timeout=15,
+    r = requests.get(
+        "https://api.openalex.org/works",
+        params={
+            "search": query,
+            "per_page": max_results,
+            "select": "title,doi,publication_year,open_access,authorships,abstract_inverted_index,primary_location",
+        },
+        headers={"User-Agent": user_agent},
+        timeout=15,
+    )
+    r.raise_for_status()
+    works = r.json().get("results", [])
+    lines = []
+    for work in works:
+        authors = ", ".join(
+            a.get("author", {}).get("display_name", "")
+            for a in (work.get("authorships") or [])[:3]
         )
-        r.raise_for_status()
-        papers = r.json().get("data", [])
-        lines = []
-        for paper in papers:
-            authors = ", ".join(a.get("name", "") for a in (paper.get("authors") or [])[:3])
-            pdf_info = paper.get("openAccessPdf")
-            pdf_url = pdf_info.get("url") if pdf_info else None
-            entry = (
-                f"{paper.get('title', 'Untitled')} ({paper.get('year') or 'N/A'})\n"
-                f"Authors: {authors}\nURL: {paper.get('url', '')}"
-            )
-            if pdf_url:
-                entry += f"\nPDF: {pdf_url}"
-            entry += f"\nAbstract: {(paper.get('abstract') or 'No abstract.')[:600]}"
-            lines.append(entry)
-        return "\n\n".join(lines) or "No results found."
-    except requests.HTTPError as exc:
-        if exc.response is not None and exc.response.status_code == 429:
-            with DDGS() as ddgs:
-                results = list(ddgs.text(f"site:semanticscholar.org {query}", max_results=max_results))
-            if not results:
-                return "Semantic Scholar rate limited. Try again in a few minutes."
-            return "\n\n".join(f"{r.get('title')}\n{r.get('href')}\n{r.get('body')}" for r in results)
-        raise
+        oa = work.get("open_access") or {}
+        pdf_url = oa.get("oa_url")
+        location = work.get("primary_location") or {}
+        url = location.get("landing_page_url") or work.get("doi") or ""
+        abstract = _reconstruct_abstract(work.get("abstract_inverted_index"))
+
+        entry = (
+            f"{work.get('title', 'Untitled')} ({work.get('publication_year') or 'N/A'})\n"
+            f"Authors: {authors}\nURL: {url}"
+        )
+        if pdf_url:
+            entry += f"\nPDF: {pdf_url}"
+        if abstract:
+            entry += f"\nAbstract: {abstract[:600]}"
+        lines.append(entry)
+    return "\n\n".join(lines) or "No results found."
