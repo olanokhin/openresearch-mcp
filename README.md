@@ -179,6 +179,17 @@ curl http://localhost:8000/health
 - [ ] PubMed / NCBI (optional key)
 - [ ] NewsAPI support (optional key)
 
+## Security
+
+openresearch-mcp was reviewed and hardened using **[agent-security-skill](https://github.com/olanokhin/agent-security-skill)**,
+an OWASP-aligned AI agent security review skill developed by the maintainer.
+
+That review directly led to concrete hardening in this server: SSRF-resistant URL fetching,
+untrusted-content framing for tool outputs, bounded downloads, pinned GitHub Actions,
+dependency major-version caps, and regression tests for security-sensitive behavior.
+
+See the hardening notes and current security posture in **[SECURITY.md](SECURITY.md)**.
+
 ## License
 
 Apache 2.0
