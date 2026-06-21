@@ -1,57 +1,56 @@
 # openresearch-mcp
 
+[![PyPI version](https://img.shields.io/pypi/v/openresearch-mcp)](https://pypi.org/project/openresearch-mcp/)
+[![Python versions](https://img.shields.io/pypi/pyversions/openresearch-mcp)](https://pypi.org/project/openresearch-mcp/)
+[![License](https://img.shields.io/pypi/l/openresearch-mcp)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/olanokhin/openresearch-mcp/ci.yml?branch=main&label=CI)](https://github.com/olanokhin/openresearch-mcp/actions/workflows/ci.yml)
+
 Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, OpenCode, Open WebUI, or any MCP-compatible agent — no API keys required.
 
 ## Tools
 
-| Tool | Source | Auth |
-|------|--------|------|
-| `web_search` | DuckDuckGo | None |
-| `read_url` | Any webpage | None |
-| `read_pdf` | Any PDF / arXiv | None |
-| `read_repo` | GitHub public repos | None (set `GITHUB_TOKEN` for 5k req/hr) |
-| `search_hacker_news` | HN via Algolia API | None |
-| `search_stackoverflow` | Stack Overflow API | None (set `STACKEXCHANGE_KEY` for higher limits) |
-| `search_semantic_scholar` | Semantic Scholar API | None (set `SEMANTIC_SCHOLAR_KEY` for 1 req/sec) |
-| `get_youtube_transcript` | YouTube captions | None |
+| Tool | Source | Notes |
+| ---- | ------ | ----- |
+| `web_search` | DuckDuckGo | Optional `site=` param to scope to a domain (e.g. `arxiv.org`) |
+| `read_url` | Any webpage | Strips nav/scripts, returns clean text |
+| `read_pdf` | Any PDF or arXiv | Accepts `/abs/`, `/pdf/`, `/html/` arXiv URLs interchangeably |
+| `search_openalex` | OpenAlex | 250M+ works, zero rate limiting; set `OPENALEX_EMAIL` for polite pool |
+| `search_hacker_news` | HN via Algolia | Story search with points + comment counts |
+| `search_stackoverflow` | Stack Overflow API | Set `STACKEXCHANGE_KEY` for higher quota |
+| `read_repo` | GitHub public repos | README + file tree + key docs; set `GITHUB_TOKEN` for 5k req/hr |
+| `get_youtube_transcript` | YouTube captions | Accepts full URLs, `youtu.be/` links, shorts, or bare video IDs |
 
-## Quickstart
-
-### Docker (recommended)
+## Install
 
 ```bash
-docker run -p 8000:8000 ghcr.io/yourusername/openresearch-mcp
-```
+# Recommended — zero install, always isolated
+uvx openresearch-mcp
 
-With optional keys for higher limits:
-
-```bash
-docker run -p 8000:8000 \
-  -e GITHUB_TOKEN=ghp_... \
-  -e SEMANTIC_SCHOLAR_KEY=... \
-  ghcr.io/yourusername/openresearch-mcp
-```
-
-### Local
-
-```bash
+# Or install globally with pip
 pip install openresearch-mcp
 openresearch-mcp
 ```
 
-Or with uv:
+By default the server starts on `http://0.0.0.0:8000/mcp` (Streamable HTTP, MCP 1.1+).
+
+## Update
 
 ```bash
-uvx openresearch-mcp
+uvx --refresh openresearch-mcp
 ```
 
-### stdio (for Claude Desktop / Cursor)
+With pip:
 
 ```bash
-MCP_TRANSPORT=stdio openresearch-mcp
+pip install --upgrade openresearch-mcp
 ```
 
-Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+## Connect to an MCP client
+
+### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`  
+(Windows: `%APPDATA%\Claude\claude_desktop_config.json`)
 
 ```json
 {
@@ -65,23 +64,108 @@ Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_conf
 }
 ```
 
-## Connect via HTTP
+Restart Claude Desktop after saving. The server runs in stdio mode — no port needed.
 
-Point your agent at `http://localhost:8000/mcp` (Streamable HTTP transport, MCP 1.1+).
+### Cursor
+
+Create or edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per-project):
+
+```json
+{
+  "mcpServers": {
+    "openresearch": {
+      "command": "uvx",
+      "args": ["openresearch-mcp"],
+      "env": { "MCP_TRANSPORT": "stdio" }
+    }
+  }
+}
+```
+
+### HTTP agents (OpenCode, Open WebUI, custom)
+
+Start the server:
+
+```bash
+uvx openresearch-mcp
+# or: openresearch-mcp
+```
+
+Point your agent at:
+
+```text
+http://localhost:8000/mcp
+```
+
+## Optional env vars
+
+All tools work without any keys. Set these to increase rate limits:
+
+| Variable | Effect |
+| -------- | ------ |
+| `GITHUB_TOKEN` | GitHub: 60 → 5,000 req/hr |
+| `OPENALEX_EMAIL` | OpenAlex polite pool (higher limits) |
+| `STACKEXCHANGE_KEY` | Stack Overflow: higher daily quota |
+
+Example with keys:
+
+```bash
+GITHUB_TOKEN=ghp_... OPENALEX_EMAIL=you@example.com uvx openresearch-mcp
+```
+
+Or in Claude Desktop config:
+
+```json
+{
+  "mcpServers": {
+    "openresearch": {
+      "command": "uvx",
+      "args": ["openresearch-mcp"],
+      "env": {
+        "MCP_TRANSPORT": "stdio",
+        "GITHUB_TOKEN": "ghp_...",
+        "OPENALEX_EMAIL": "you@example.com"
+      }
+    }
+  }
+}
+```
+
+## Health check
+
+When running in HTTP mode, check which sources are reachable:
+
+```bash
+curl http://localhost:8000/health
+```
+
+```json
+{
+  "status": "ok",
+  "sources": {
+    "duckduckgo":    { "status": "ok", "latency_ms": 173 },
+    "github":        { "status": "ok", "latency_ms": 101 },
+    "hacker_news":   { "status": "ok", "latency_ms": 308 },
+    "stackoverflow": { "status": "ok", "latency_ms": 247 },
+    "openalex":      { "status": "ok", "latency_ms": 412 },
+    "youtube":       { "status": "ok", "latency_ms": 320 }
+  }
+}
+```
+
+`status` is `"ok"`, `"degraded"` (some sources down), or `"down"` (all unreachable). HTTP 200 / 503.
 
 ## Known limitations
 
-- **Reddit / Zenodo**: block unauthenticated requests — not included in v1
-- **YouTube**: rate-limited by YouTube at scale; works for personal use
-- **Semantic Scholar**: 100 req/5min without key; auto-falls back to DDG snippets on 429
+- **Reddit / Zenodo**: block unauthenticated scraping — not included
+- **YouTube**: rate-limited at scale; works well for personal/low-volume use
 
 ## Roadmap
 
 - [ ] Reddit OAuth (browser-based, no user key management)
 - [ ] GitHub Device Flow login
-- [ ] OpenAlex (zero-auth, 250M+ papers)
-- [ ] NewsAPI support (optional key)
 - [ ] PubMed / NCBI (optional key)
+- [ ] NewsAPI support (optional key)
 
 ## License
 
