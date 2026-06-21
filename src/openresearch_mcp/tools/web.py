@@ -13,13 +13,16 @@ from pypdf import PdfReader
 MAX_TEXT_CHARS = 20_000
 
 
-def web_search(query: str, max_results: int = 5) -> str:
+def web_search(query: str, max_results: int = 5, site: str | None = None) -> str:
     """Search the web via DuckDuckGo. No API key required.
 
     Args:
         query: Search query string.
         max_results: Number of results to return (1–20, default 5).
+        site: Restrict results to a specific domain, e.g. "arxiv.org" or "github.com".
     """
+    if site:
+        query = f"site:{site} {query}"
     max_results = max(1, min(max_results, 20))
     with DDGS() as ddgs:
         results = list(ddgs.text(query, max_results=max_results))
