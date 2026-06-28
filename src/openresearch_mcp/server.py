@@ -19,6 +19,11 @@ from openresearch_mcp.tools.academic import (
     search_openalex,
     search_stackoverflow,
 )
+from openresearch_mcp.tools.bluesky import (
+    get_bluesky_profile,
+    read_bluesky_feed,
+    search_bluesky_users,
+)
 from openresearch_mcp.tools.core import get_current_date
 from openresearch_mcp.tools.crypto import get_crypto_price
 from openresearch_mcp.tools.europepmc import search_europepmc
@@ -84,7 +89,11 @@ mcp = FastMCP(
         "• search_news — fresh global news on a topic (multilingual) via GDELT; returns articles to feed "
         "into read_url. Rate-limited to ~1 call / 5 s — don't loop; it returns a retry message if tripped.\n"
         "• search_europepmc — biomedical / life-science literature; flags open-access papers and gives a PDF "
-        "URL to feed into read_pdf. Complements search_openalex (which covers all disciplines).\n\n"
+        "URL to feed into read_pdf. Complements search_openalex (which covers all disciplines).\n"
+        "• search_bluesky_users — find researcher/dev Bluesky profiles by name, handle, or bio.\n"
+        "• get_bluesky_profile — full bio + follower/post counts for a handle (cheap context before a feed).\n"
+        "• read_bluesky_feed — a user's recent original posts (reposts/replies filtered). Chain: "
+        "search_openalex → search_bluesky_users → read_bluesky_feed to see live discourse from paper authors.\n\n"
         "Optional env vars to increase rate limits: GITHUB_TOKEN (60→5k req/hr), "
         "OPENALEX_EMAIL (polite pool, higher limits), STACKEXCHANGE_KEY (higher SO quota)."
     ),
@@ -191,6 +200,24 @@ mcp.tool(
     tags={"search", "academic", "biomed"},
     annotations=_READ_ONLY_WEB,
 )(search_europepmc)
+
+mcp.tool(
+    title="Search Bluesky Users",
+    tags={"search", "social"},
+    annotations=_READ_ONLY_WEB,
+)(search_bluesky_users)
+
+mcp.tool(
+    title="Get Bluesky Profile",
+    tags={"social"},
+    annotations=_READ_ONLY_WEB,
+)(get_bluesky_profile)
+
+mcp.tool(
+    title="Read Bluesky Feed",
+    tags={"social", "content"},
+    annotations=_READ_ONLY_WEB,
+)(read_bluesky_feed)
 
 
 # Deliberately a *representative sample* of upstream reachability, NOT a per-tool

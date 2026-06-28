@@ -64,9 +64,9 @@ Zero-auth, no external call — server-generated helpers that make the rest of t
 
 | Tool | Params | Description | Source / Endpoint | Auth | Status | Notes |
 | ---- | ------ | ----------- | ----------------- | ---- | ------ | ----- |
-| `search_bluesky_users` | `query` | Find researcher/dev profiles by name, handle, or bio text | Bluesky `app.bsky.actor.searchActors` | ✅ | Verified live | Returns handle, DID, displayName, bio |
-| `read_bluesky_feed` | `handle`, `limit?` | Read a user's recent posts ("what did they write") | Bluesky `app.bsky.feed.getAuthorFeed` | ✅ | Verified live | Parse `feed[].post.record.text`; filter out reposts/replies |
-| `get_bluesky_profile` | `handle` | Full bio, links, follower counts | Bluesky `app.bsky.actor.getProfile` | ✅ | Planned | Cheap context before reading feed |
+| `search_bluesky_users` | `query` | Find researcher/dev profiles by name, handle, or bio text | Bluesky `app.bsky.actor.searchActors` | ✅ | **Built (0.2.0-dev)** | Public AppView (`public.api.bsky.app`), zero-auth; returns handle, displayName, bio. |
+| `read_bluesky_feed` | `handle`, `limit?` | Read a user's recent posts ("what did they write") | Bluesky `app.bsky.feed.getAuthorFeed` | ✅ | **Built (0.2.0-dev)** | Server `filter=posts_no_replies` + client drop of reposts (`reason`); defensive nested parse; live-confirmed original-posts-only. |
+| `get_bluesky_profile` | `handle` | Full bio, links, follower counts | Bluesky `app.bsky.actor.getProfile` | ✅ | **Built (0.2.0-dev)** | Cheap context before a feed; counts formatted; `@` stripped from handle. |
 | `search_bluesky_posts` | `query`, `max_results?` | Keyword search across all public posts | Bluesky `app.bsky.feed.searchPosts` | 🔑 | 0.4 / personal-auth | **Requires user's own Bluesky app-password** (`BLUESKY_IDENTIFIER` + `BLUESKY_APP_PASSWORD`) — authenticates *as the user's account*, not a data-token. Distinct threat-model: isolate, label clearly, opt-in only. Tool description must tell the agent: works only if app-password set, else suggest the user add one to unlock post search. |
 
 > **Scope for the agent (in tool descriptions):** zero-auth tools find people and read their public feeds. Keyword post-search across the network needs the user's own Bluesky app-password → exposed as `search_bluesky_posts` (🔑 personal-auth). The agent should: use the zero-auth tools by default; if the user explicitly wants network-wide post search, tell them it requires adding their Bluesky app-password, and why that's a different (account-level) credential than the other optional keys.

@@ -29,6 +29,9 @@ Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, O
 | `get_crypto_price` | CoinGecko | Crypto price (current or daily history) by coin id/symbol vs a quote currency; no key |
 | `search_news` | GDELT | Fresh global news on a topic (multilingual); returns articles to feed into `read_url`; no key (rate-limited ~1/5s) |
 | `search_europepmc` | Europe PMC | Biomedical/life-science papers; flags open-access and gives a PDF URL to feed into `read_pdf`; no key |
+| `search_bluesky_users` | Bluesky | Find researcher/dev profiles by name, handle, or bio; no key |
+| `get_bluesky_profile` | Bluesky | Full bio + follower/post counts for a handle; no key |
+| `read_bluesky_feed` | Bluesky | A user's recent original posts (reposts/replies filtered); no key |
 
 ## Install
 
