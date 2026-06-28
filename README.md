@@ -32,6 +32,7 @@ Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, O
 | `search_bluesky_users` | Bluesky | Find researcher/dev profiles by name, handle, or bio; no key |
 | `get_bluesky_profile` | Bluesky | Full bio + follower/post counts for a handle; no key |
 | `read_bluesky_feed` | Bluesky | A user's recent original posts (reposts/replies filtered); no key |
+| `get_company_financials` | SEC EDGAR | Annual revenue, earnings, assets for a US-listed company by ticker (10-K filings); no key (set `SEC_USER_AGENT` for heavy use) |
 
 ## Install
 
@@ -131,6 +132,7 @@ All tools work without any keys. Set these to increase rate limits:
 | `GITHUB_TOKEN` | GitHub: 60 → 5,000 req/hr |
 | `OPENALEX_EMAIL` | OpenAlex polite pool (higher limits) |
 | `STACKEXCHANGE_KEY` | Stack Overflow: higher daily quota |
+| `SEC_USER_AGENT` | Your contact (e.g. email) for SEC EDGAR fair-access; a default is used otherwise |
 
 Example with keys:
 

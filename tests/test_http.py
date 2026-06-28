@@ -61,6 +61,7 @@ class TestSourceErrorContract:
             with pytest.raises(SourceError) as ei:
                 fetch_json("https://x.test", source="SEC")
         assert "503" in ei.value.public
+        assert ei.value.status_code == 503
 
     def test_429_gets_retry_message(self):
         with patch("openresearch_mcp.http.requests.get",

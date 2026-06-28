@@ -30,6 +30,7 @@ from openresearch_mcp.tools.europepmc import search_europepmc
 from openresearch_mcp.tools.fx import get_fx_rate
 from openresearch_mcp.tools.github import read_repo
 from openresearch_mcp.tools.news import search_news
+from openresearch_mcp.tools.sec import get_company_financials
 from openresearch_mcp.tools.weather import get_historical_weather, get_weather_forecast
 from openresearch_mcp.tools.web import read_pdf, read_url, web_search
 from openresearch_mcp.tools.worldbank import get_country_indicator, search_indicators
@@ -93,7 +94,9 @@ mcp = FastMCP(
         "• search_bluesky_users — find researcher/dev Bluesky profiles by name, handle, or bio.\n"
         "• get_bluesky_profile — full bio + follower/post counts for a handle (cheap context before a feed).\n"
         "• read_bluesky_feed — a user's recent original posts (reposts/replies filtered). Chain: "
-        "search_openalex → search_bluesky_users → read_bluesky_feed to see live discourse from paper authors.\n\n"
+        "search_openalex → search_bluesky_users → read_bluesky_feed to see live discourse from paper authors.\n"
+        "• get_company_financials — annual revenue, earnings, and assets for a US-listed company by ticker, "
+        "from SEC 10-K filings; no key (set SEC_USER_AGENT to your email to comply with SEC fair-access).\n\n"
         "Optional env vars to increase rate limits: GITHUB_TOKEN (60→5k req/hr), "
         "OPENALEX_EMAIL (polite pool, higher limits), STACKEXCHANGE_KEY (higher SO quota)."
     ),
@@ -218,6 +221,12 @@ mcp.tool(
     tags={"social", "content"},
     annotations=_READ_ONLY_WEB,
 )(read_bluesky_feed)
+
+mcp.tool(
+    title="Get Company Financials",
+    tags={"finance", "economics"},
+    annotations=_READ_ONLY_WEB,
+)(get_company_financials)
 
 
 # Deliberately a *representative sample* of upstream reachability, NOT a per-tool

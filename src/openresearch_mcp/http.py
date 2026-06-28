@@ -87,11 +87,12 @@ class SourceError(Exception):
       surfaced, so we don't leak infrastructure shape to the model.
     """
 
-    def __init__(self, source: str, *, public: str, log: str) -> None:
+    def __init__(self, source: str, *, public: str, log: str, status_code: int | None = None) -> None:
         super().__init__(public)
         self.source = source
         self.public = public
         self.log = log
+        self.status_code = status_code
 
 
 def reset_http_state() -> None:
@@ -202,7 +203,7 @@ def fetch_json(
                 if resp.status_code == 429
                 else f"{source} returned HTTP {resp.status_code}."
             )
-            raise SourceError(source, public=public, log=str(exc)) from exc
+            raise SourceError(source, public=public, log=str(exc), status_code=resp.status_code) from exc
 
         try:
             data = resp.json()
