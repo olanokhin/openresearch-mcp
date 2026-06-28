@@ -142,7 +142,12 @@ def get_country_indicator(
         return f"No data for {code} in {country!r} for that period."
 
     # Filter null values (the latest year is often empty) and order oldest→newest.
-    points = [(r["date"], r["value"]) for r in rows if r.get("value") is not None]
+    # Guard both keys: a malformed row must skip, not KeyError past @tool_safe.
+    points = [
+        (r["date"], r["value"])
+        for r in rows
+        if isinstance(r, dict) and r.get("date") and r.get("value") is not None
+    ]
     if not points:
         return f"No non-empty values for {code} in {country!r} for that period."
     points.sort(key=lambda p: p[0])

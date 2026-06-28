@@ -113,6 +113,21 @@ class TestGetCountryIndicator:
         assert "2021: 100.0" in result
         assert "2022:" not in result
 
+    def test_malformed_row_skipped_not_crashed(self):
+        # A row with value but no "date" must skip, not KeyError past @tool_safe.
+        series = _series([("2021", 100.0)])
+        series[1].append({"indicator": {}, "country": {}, "value": 5.0})  # no "date"
+        with patch(PATCH, return_value=_ok(series)):
+            result = get_country_indicator("US", "NY.GDP.MKTP.CD")
+        assert "2021: 100.0" in result  # well-formed row still rendered
+
+    def test_non_dict_row_skipped_not_crashed(self):
+        series = _series([("2021", 100.0)])
+        series[1].append("not-a-row")
+        with patch(PATCH, return_value=_ok(series)):
+            result = get_country_indicator("US", "NY.GDP.MKTP.CD")
+        assert "2021: 100.0" in result
+
     def test_invalid_country_before_network(self):
         with patch(PATCH, side_effect=AssertionError("network must not be hit")):
             result = get_country_indicator("Atlantis", "NY.GDP.MKTP.CD")

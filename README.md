@@ -25,6 +25,8 @@ Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, O
 | `get_historical_weather` | Open-Meteo | Climate series since 1940 for a place + date range, aggregated monthly/yearly; no key. See licensing note below |
 | `search_indicators` | World Bank | Find an indicator code by keyword ("GDP", "migration"); feed into `get_country_indicator` |
 | `get_country_indicator` | World Bank | Yearly socio-economic series (GDP, population, inflation, migration, life expectancy…) by country + code; no key |
+| `get_fx_rate` | Frankfurter (ECB) | Currency rates: latest, a historical date, or a date-range series (downsample week/month); no key |
+| `get_crypto_price` | CoinGecko | Crypto price (current or daily history) by coin id/symbol vs a quote currency; no key |
 
 ## Install
 

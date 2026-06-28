@@ -20,6 +20,8 @@ from openresearch_mcp.tools.academic import (
     search_stackoverflow,
 )
 from openresearch_mcp.tools.core import get_current_date
+from openresearch_mcp.tools.crypto import get_crypto_price
+from openresearch_mcp.tools.fx import get_fx_rate
 from openresearch_mcp.tools.github import read_repo
 from openresearch_mcp.tools.weather import get_historical_weather, get_weather_forecast
 from openresearch_mcp.tools.web import read_pdf, read_url, web_search
@@ -72,7 +74,11 @@ mcp = FastMCP(
         "• search_indicators — find a World Bank indicator code by keyword (\"GDP\", \"migration\"); feed the "
         "code into get_country_indicator.\n"
         "• get_country_indicator — yearly socio-economic series (GDP, population, inflation, migration, life "
-        "expectancy…) for a country + indicator code; no key needed (World Bank).\n\n"
+        "expectancy…) for a country + indicator code; no key needed (World Bank).\n"
+        "• get_fx_rate — currency exchange rates (ECB): latest, a historical date, or a date-range series "
+        "(downsample week/month); no key needed (Frankfurter).\n"
+        "• get_crypto_price — cryptocurrency price (current or daily history) by coin id/symbol vs a quote "
+        "currency; no key needed (CoinGecko, keyless tier is rate-limited).\n\n"
         "Optional env vars to increase rate limits: GITHUB_TOKEN (60→5k req/hr), "
         "OPENALEX_EMAIL (polite pool, higher limits), STACKEXCHANGE_KEY (higher SO quota)."
     ),
@@ -155,6 +161,18 @@ mcp.tool(
     tags={"economics", "macro"},
     annotations=_READ_ONLY_WEB,
 )(get_country_indicator)
+
+mcp.tool(
+    title="Get FX Rate",
+    tags={"finance", "currency"},
+    annotations=_READ_ONLY_WEB,
+)(get_fx_rate)
+
+mcp.tool(
+    title="Get Crypto Price",
+    tags={"finance", "crypto"},
+    annotations=_READ_ONLY_WEB,
+)(get_crypto_price)
 
 
 # Deliberately a *representative sample* of upstream reachability, NOT a per-tool
