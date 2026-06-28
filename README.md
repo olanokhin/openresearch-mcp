@@ -28,6 +28,7 @@ Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, O
 | `get_fx_rate` | Frankfurter (ECB) | Currency rates: latest, a historical date, or a date-range series (downsample week/month); no key |
 | `get_crypto_price` | CoinGecko | Crypto price (current or daily history) by coin id/symbol vs a quote currency; no key |
 | `search_news` | GDELT | Fresh global news on a topic (multilingual); returns articles to feed into `read_url`; no key (rate-limited ~1/5s) |
+| `search_europepmc` | Europe PMC | Biomedical/life-science papers; flags open-access and gives a PDF URL to feed into `read_pdf`; no key |
 
 ## Install
 

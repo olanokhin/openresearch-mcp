@@ -129,7 +129,7 @@ Zero-auth, no external call — server-generated helpers that make the rest of t
 | Tool | Params | Description | Source / Endpoint | Auth | Status | Notes |
 | ---- | ------ | ----------- | ----------------- | ---- | ------ | ----- |
 | `search_pubmed` | `query`, `max_results?` | Biomedical/neuro/medical search with MeSH | NCBI E-utilities `esearch`/`esummary` | ⚙️ | Verified live | Works keyless; free **NCBI API key** (ncbi.nlm.nih.gov/account — instant, no card) → `NCBI_API_KEY` raises 3→10 req/sec |
-| `search_europepmc` | `query`, `max_results?` | Biomed + OA full-text discovery | Europe PMC `webservices/rest/search` | ✅ | Verified live | Returns `isOpenAccess` → gate `read_pdf` to OA; no key ever |
+| `search_europepmc` | `query`, `max_results?` | Biomed + OA full-text discovery | Europe PMC `webservices/rest/search` | ✅ | **Built (0.2.0-dev)** | **OA→read_pdf gate (first real chaining link in the wave)**: OA papers surface a PDF URL for `read_pdf`; paywalled withhold it. Defensive nested parse of `fullTextUrlList`; live-confirmed. |
 | `get_crossref` | `doi` | Canonical metadata for any publisher's DOI (Nature, Science, Cell…) | Crossref `api.crossref.org/works/{doi}` | ⚙️ | Planned | No key; just set `mailto` (any email) to join the faster polite pool → `CROSSREF_MAILTO` |
 
 ---
