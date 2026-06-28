@@ -104,8 +104,8 @@ Zero-auth, no external call — server-generated helpers that make the rest of t
 
 | Tool | Params | Description | Source / Endpoint | Auth | Status | Notes |
 | ---- | ------ | ----------- | ----------------- | ---- | ------ | ----- |
-| `get_country_indicator` | `country`, `indicator`, `start?`, `end?` | Yearly series: GDP, population, inflation, net migration, life expectancy, etc. | World Bank `v2/country/{c}/indicator/{i}` | ✅ | Verified live | **Filter out years with `value: null`** (latest year often empty) |
-| `search_indicators` | `query` | Find World Bank indicator code by keyword ("GDP", "migration") | World Bank indicator catalog | ✅ | **0.2.0 (entry point)** | Domain entry point, not nice-to-have: without it the agent hallucinates indicator codes. Ships *with* `get_country_indicator`. |
+| `get_country_indicator` | `country`, `indicator`, `start?`, `end?` | Yearly series: GDP, population, inflation, net migration, life expectancy, etc. | World Bank `v2/country/{c}/indicator/{i}` | ✅ | **Built (0.2.0-dev)** | Handles WB's `[meta, rows]` array + HTTP-200 error payloads; filters `value: null`; consumes `normalize_country` (→alpha-2) + `normalize_year`; orders oldest→newest; capped at `MAX_TEXT_CHARS`; live test green. |
+| `search_indicators` | `query` | Find World Bank indicator code by keyword ("GDP", "migration") | World Bank indicator catalog | ✅ | **Built (0.2.0-dev)** | Searches the **WDI set (source=2, ~1,500 indicators)** — full 29k catalog is too big to sweep per query. One cached request (`cache_ttl=3600`), client-side token-AND filter; ships *with* `get_country_indicator`. live test green. |
 
 ---
 

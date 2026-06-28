@@ -22,6 +22,9 @@ Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, O
 | `get_youtube_transcript` | YouTube captions | Accepts full URLs, `youtu.be/` links, shorts, or bare video IDs |
 | `get_current_date` | Server clock | Current UTC date/time — anchors relative requests ("last 30 days") instead of guessing |
 | `get_weather_forecast` | Open-Meteo | Current conditions + up to 16-day forecast by place name; no key. See licensing note below |
+| `get_historical_weather` | Open-Meteo | Climate series since 1940 for a place + date range, aggregated monthly/yearly; no key. See licensing note below |
+| `search_indicators` | World Bank | Find an indicator code by keyword ("GDP", "migration"); feed into `get_country_indicator` |
+| `get_country_indicator` | World Bank | Yearly socio-economic series (GDP, population, inflation, migration, life expectancy…) by country + code; no key |
 
 ## Install
 

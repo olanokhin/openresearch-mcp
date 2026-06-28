@@ -23,6 +23,7 @@ from openresearch_mcp.tools.core import get_current_date
 from openresearch_mcp.tools.github import read_repo
 from openresearch_mcp.tools.weather import get_historical_weather, get_weather_forecast
 from openresearch_mcp.tools.web import read_pdf, read_url, web_search
+from openresearch_mcp.tools.worldbank import get_country_indicator, search_indicators
 from openresearch_mcp.tools.youtube import get_youtube_transcript
 
 _READ_ONLY_WEB = ToolAnnotations(
@@ -67,7 +68,11 @@ mcp = FastMCP(
         "no key needed (Open-Meteo).\n"
         "• get_historical_weather — past climate series (since 1940) for a place + date range, aggregated "
         "monthly or yearly for trend/anomaly analysis; no key needed (Open-Meteo). Use get_current_date to "
-        "anchor relative ranges.\n\n"
+        "anchor relative ranges.\n"
+        "• search_indicators — find a World Bank indicator code by keyword (\"GDP\", \"migration\"); feed the "
+        "code into get_country_indicator.\n"
+        "• get_country_indicator — yearly socio-economic series (GDP, population, inflation, migration, life "
+        "expectancy…) for a country + indicator code; no key needed (World Bank).\n\n"
         "Optional env vars to increase rate limits: GITHUB_TOKEN (60→5k req/hr), "
         "OPENALEX_EMAIL (polite pool, higher limits), STACKEXCHANGE_KEY (higher SO quota)."
     ),
@@ -138,6 +143,18 @@ mcp.tool(
     tags={"weather", "climate"},
     annotations=_READ_ONLY_WEB,
 )(get_historical_weather)
+
+mcp.tool(
+    title="Search World Bank Indicators",
+    tags={"search", "economics", "macro"},
+    annotations=_READ_ONLY_WEB,
+)(search_indicators)
+
+mcp.tool(
+    title="Get Country Indicator",
+    tags={"economics", "macro"},
+    annotations=_READ_ONLY_WEB,
+)(get_country_indicator)
 
 
 # Deliberately a *representative sample* of upstream reachability, NOT a per-tool
