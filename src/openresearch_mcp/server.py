@@ -21,6 +21,7 @@ from openresearch_mcp.tools.academic import (
 )
 from openresearch_mcp.tools.core import get_current_date
 from openresearch_mcp.tools.github import read_repo
+from openresearch_mcp.tools.weather import get_historical_weather, get_weather_forecast
 from openresearch_mcp.tools.web import read_pdf, read_url, web_search
 from openresearch_mcp.tools.youtube import get_youtube_transcript
 
@@ -61,7 +62,12 @@ mcp = FastMCP(
         "• get_youtube_transcript — fetch captions from a YouTube video for summarization or citation; "
         "accepts full URLs or bare 11-char video IDs.\n"
         "• get_current_date — the current UTC date/time. Call this to anchor any relative request "
-        "(\"last 30 days\", \"since last year\", \"recent\") instead of guessing today's date.\n\n"
+        "(\"last 30 days\", \"since last year\", \"recent\") instead of guessing today's date.\n"
+        "• get_weather_forecast — current conditions + up to 16-day daily forecast for a place by name; "
+        "no key needed (Open-Meteo).\n"
+        "• get_historical_weather — past climate series (since 1940) for a place + date range, aggregated "
+        "monthly or yearly for trend/anomaly analysis; no key needed (Open-Meteo). Use get_current_date to "
+        "anchor relative ranges.\n\n"
         "Optional env vars to increase rate limits: GITHUB_TOKEN (60→5k req/hr), "
         "OPENALEX_EMAIL (polite pool, higher limits), STACKEXCHANGE_KEY (higher SO quota)."
     ),
@@ -121,7 +127,26 @@ mcp.tool(
     annotations=_READ_ONLY_LOCAL,
 )(get_current_date)
 
+mcp.tool(
+    title="Get Weather Forecast",
+    tags={"weather", "climate"},
+    annotations=_READ_ONLY_WEB,
+)(get_weather_forecast)
 
+mcp.tool(
+    title="Get Historical Weather",
+    tags={"weather", "climate"},
+    annotations=_READ_ONLY_WEB,
+)(get_historical_weather)
+
+
+# Deliberately a *representative sample* of upstream reachability, NOT a per-tool
+# availability matrix. We don't add a probe for every new tool/source — that list
+# would balloon and each /health hit would fan out N outbound requests (the very
+# amplification the TTL cache below guards against). New domains (weather, finance,
+# …) intentionally do not get their own probe; /health answers "are core upstreams
+# reachable from here", not "is every tool up". Tool failures surface per-call via
+# the graceful SourceError contract instead.
 _PROBES: list[tuple[str, str]] = [
     ("duckduckgo",       "https://lite.duckduckgo.com/lite/"),
     ("github",           "https://api.github.com/rate_limit"),

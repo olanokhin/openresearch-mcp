@@ -21,6 +21,7 @@ Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, O
 | `read_repo` | GitHub public repos | README + file tree + key docs; set `GITHUB_TOKEN` for 5k req/hr |
 | `get_youtube_transcript` | YouTube captions | Accepts full URLs, `youtu.be/` links, shorts, or bare video IDs |
 | `get_current_date` | Server clock | Current UTC date/time — anchors relative requests ("last 30 days") instead of guessing |
+| `get_weather_forecast` | Open-Meteo | Current conditions + up to 16-day forecast by place name; no key. See licensing note below |
 
 ## Install
 
@@ -172,6 +173,7 @@ curl http://localhost:8000/health
 
 - **Reddit / Zenodo**: block unauthenticated scraping — not included
 - **YouTube**: rate-limited at scale; works well for personal/low-volume use
+- **Weather (Open-Meteo)**: data is licensed **[CC BY 4.0](https://open-meteo.com/en/license)** and free for **non-commercial** use up to ~10,000 requests/day. **Commercial use requires Open-Meteo's paid plan or self-hosting** — embedding `get_weather_forecast` in a commercial product without one inherits a license obligation. Attribution to Open-Meteo is required.
 - **PDF parsing**: `read_pdf` parses untrusted PDFs in-process (with download-size and page caps). Fine for personal/low-volume use; a public high-volume deployment should isolate parsing in a subprocess with CPU/memory limits.
 
 ## Roadmap

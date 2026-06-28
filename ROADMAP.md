@@ -113,9 +113,9 @@ Zero-auth, no external call — server-generated helpers that make the rest of t
 
 | Tool | Params | Description | Source / Endpoint | Auth | Status | Notes |
 | ---- | ------ | ----------- | ----------------- | ---- | ------ | ----- |
-| `get_weather_forecast` | `location`, `days?` | Current + up to 16-day forecast | Open-Meteo `api.open-meteo.com/v1/forecast` | ✅ | Verified live | Host `api.`; `timezone=auto`; recent past via `past_days` |
-| `get_historical_weather` | `location`, `start`, `end`, `aggregate=monthly\|yearly` | Climate series since 1940 (ERA5) for trends/anomalies | Open-Meteo `archive-api.open-meteo.com/v1/archive` | ✅ | Verified live | **Different host `archive-api.`**; **must aggregate** (24y = 8766 daily points — too big raw); temp→mean, precip→sum; ~5-day lag |
-| `_geocode` (internal) | `name` | City name → lat/lon + timezone | Open-Meteo `geocoding-api.open-meteo.com/v1/search` | ✅ | Verified live | Helper, not a standalone tool |
+| `get_weather_forecast` | `location`, `days?` | Current + up to 16-day forecast | Open-Meteo `api.open-meteo.com/v1/forecast` | ✅ | **Built (0.2.0-dev)** | Host `api.`; `timezone=auto`; WMO codes → human text; live integration test green. `past_days` not wired yet (kept minimal). |
+| `get_historical_weather` | `location`, `start`, `end`, `aggregate=monthly\|yearly` | Climate series since 1940 (ERA5) for trends/anomalies | Open-Meteo `archive-api.open-meteo.com/v1/archive` | ✅ | **Built (0.2.0-dev)** | Host `archive-api.`; aggregates daily→monthly/yearly (temp→mean, precip→sum, nulls skipped); reuses `_geocode` + `normalize_date_range`; output capped at `MAX_TEXT_CHARS`; live integration test green. |
+| `_geocode` (internal) | `name` | City name → lat/lon + timezone | Open-Meteo `geocoding-api.open-meteo.com/v1/search` | ✅ | **Built (0.2.0-dev)** | Helper, not a standalone tool; shipped with `get_weather_forecast`. |
 
 > ⚠️ **License — must be in README (trust issue, not a footnote).** Open-Meteo data is **CC BY 4.0, free for *non-commercial* use** up to ~10k req/day. A user who embeds openresearch-mcp in a **commercial product inherits a license violation for this tool unless they move to Open-Meteo's paid plan or self-host.** State this plainly so commercial users aren't caught unaware. Attribution required. Also catch `{"error": true, "reason": ...}` responses.
 
