@@ -77,7 +77,7 @@ Zero-auth, no external call — server-generated helpers that make the rest of t
 
 | Tool | Params | Description | Source / Endpoint | Auth | Status | Notes |
 | ---- | ------ | ----------- | ----------------- | ---- | ------ | ----- |
-| `search_news` | `query`, `max_results?` | Fresh global news on a topic, multilingual (English query → 65 languages) | GDELT DOC 2.0 `mode=ArtList` | ✅ | Verified live | Returns title/URL/domain/country/language/tone → feed to `read_url` |
+| `search_news` | `query`, `max_results?` | Fresh global news on a topic, multilingual (English query → 65 languages) | GDELT DOC 2.0 `mode=ArtList` | ✅ | **Built (0.2.0-dev)** | Returns title/URL/domain/country/language/date → feed to `read_url`. **Validates the throttle path**: `min_interval=5`, `cache_ttl=300`; 429 + plain-text body → graceful "rate-limited, retry" (live-confirmed, multilingual results). |
 | `news_trend` | `query`, `timespan?` | Volume-of-mentions curve over time (Google-Trends substitute for media) | GDELT `mode=TimelineVol` | ✅ | Planned | — |
 
 > **Rate limit (critical):** GDELT allows ~1 request / 5 sec. On breach it returns **plain text, not JSON** → tool must detect non-JSON and return "rate limited, retry", never crash. **Server owns a TTL cache + throttle (see Shared conventions) — do not rely on agent-side warnings to honour the 1 req / 5 s limit.**
