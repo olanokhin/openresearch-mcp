@@ -3,8 +3,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import requests as req_lib
-
 from openresearch_mcp.tools.academic import (
     _reconstruct_abstract,
     search_hacker_news,
@@ -22,7 +20,7 @@ def _ok(data: dict) -> MagicMock:
 
 class TestSearchHackerNews:
     def test_returns_story_with_links_and_stats(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"hits": [
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok({"hits": [
             {"title": "FastMCP Released", "objectID": "42", "url": "https://example.com", "points": 250, "num_comments": 80}
         ]})):
             result = search_hacker_news("fastmcp")
@@ -32,11 +30,11 @@ class TestSearchHackerNews:
         assert "80" in result
 
     def test_no_results(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"hits": []})):
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok({"hits": []})):
             assert search_hacker_news("xyzzy") == "No results found."
 
     def test_max_results_clamped_to_20(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"hits": []})) as mock_get:
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok({"hits": []})) as mock_get:
             search_hacker_news("query", max_results=999)
             call = mock_get.call_args
             assert call[1]["params"]["hitsPerPage"] == 20
@@ -44,7 +42,7 @@ class TestSearchHackerNews:
 
 class TestSearchStackOverflow:
     def test_returns_question_with_body(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"items": [
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok({"items": [
             {"title": "How to use FastMCP?", "link": "https://stackoverflow.com/q/1", "score": 12, "answer_count": 3, "body": "<p>I want to use <code>FastMCP</code>.</p>"}
         ]})):
             result = search_stackoverflow("fastmcp usage")
@@ -54,11 +52,11 @@ class TestSearchStackOverflow:
         assert "12" in result
 
     def test_no_results(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"items": []})):
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok({"items": []})):
             assert search_stackoverflow("xyzzy") == "No results found."
 
     def test_max_results_clamped_to_10(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"items": []})) as mock_get:
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok({"items": []})) as mock_get:
             search_stackoverflow("query", max_results=999)
             call = mock_get.call_args
             assert call[1]["params"]["pagesize"] == 10
@@ -104,7 +102,7 @@ def _openalex_work(**overrides) -> dict:
 
 class TestSearchOpenAlex:
     def test_returns_paper_with_authors_and_abstract(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok(
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok(
             {"results": [_openalex_work()]}
         )):
             result = search_openalex("transformer attention")
@@ -118,30 +116,30 @@ class TestSearchOpenAlex:
 
     def test_no_open_access_pdf_omits_pdf_line(self):
         work = _openalex_work(open_access={"oa_url": None})
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"results": [work]})):
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok({"results": [work]})):
             result = search_openalex("paywalled topic")
         assert "Attention Is All You Need" in result
         assert "PDF:" not in result
 
     def test_no_abstract_omits_abstract_line(self):
         work = _openalex_work(abstract_inverted_index=None)
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"results": [work]})):
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok({"results": [work]})):
             result = search_openalex("no abstract paper")
         assert "Abstract:" not in result
 
     def test_no_results(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"results": []})):
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok({"results": []})):
             assert search_openalex("xyzzy") == "No results found."
 
     def test_max_results_clamped_to_10(self):
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"results": []})) as mock_get:
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok({"results": []})) as mock_get:
             search_openalex("query", max_results=999)
             call = mock_get.call_args
             assert call[1]["params"]["per_page"] == 10
 
     def test_openalex_email_in_user_agent(self):
         import os
-        with patch("openresearch_mcp.tools.academic.requests.get", return_value=_ok({"results": []})) as mock_get, \
+        with patch("openresearch_mcp.http.requests.get", return_value=_ok({"results": []})) as mock_get, \
              patch.dict(os.environ, {"OPENALEX_EMAIL": "test@example.com"}):
             search_openalex("query")
             headers = mock_get.call_args[1]["headers"]

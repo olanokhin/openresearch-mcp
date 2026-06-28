@@ -80,7 +80,7 @@ def _validate_url(url: str) -> None:
         raise UnsafeURLError(f"could not resolve host {host!r}") from exc
 
     for info in infos:
-        raw_ip = info[4][0].split("%")[0]  # strip IPv6 zone id, e.g. fe80::1%eth0
+        raw_ip = str(info[4][0]).split("%")[0]  # strip IPv6 zone id, e.g. fe80::1%eth0
         ip = ipaddress.ip_address(raw_ip)
         if _ip_is_blocked(ip):
             raise UnsafeURLError(f"host resolves to a blocked address ({ip})")
@@ -144,7 +144,7 @@ def safe_get(
 
         # Make .content / .text return the bytes we streamed.
         resp._content = bytes(body)
-        resp._content_consumed = True
+        resp._content_consumed = True  # type: ignore[attr-defined]
         return resp
 
     raise UnsafeURLError(f"too many redirects (>{MAX_REDIRECTS})")

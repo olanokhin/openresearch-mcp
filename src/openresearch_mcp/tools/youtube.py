@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import re
 
+from openresearch_mcp.constants import MAX_TEXT_CHARS
 from openresearch_mcp.formatting import format_untrusted
-
-MAX_TEXT_CHARS = 20_000
 
 
 def get_youtube_transcript(url: str) -> str:

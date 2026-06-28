@@ -82,7 +82,7 @@ class TestValidateUrl:
     def test_rejects_internal_addresses(self, ip):
         with patch("openresearch_mcp.safefetch.socket.getaddrinfo", _resolver({"evil.test": [ip]})):
             with pytest.raises(UnsafeURLError):
-                _validate_url(f"http://evil.test/")
+                _validate_url("http://evil.test/")
 
     def test_allows_public_address(self):
         with patch("openresearch_mcp.safefetch.socket.getaddrinfo", _resolver({"example.com": ["93.184.216.34"]})):

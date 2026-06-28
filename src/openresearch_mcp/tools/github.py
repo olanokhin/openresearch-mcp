@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import base64
 import os
+from typing import Any
 from urllib.parse import urlparse
 
 import requests
 
+from openresearch_mcp.constants import MAX_TEXT_CHARS
 from openresearch_mcp.formatting import format_untrusted
 
 GITHUB_API = "https://api.github.com"
 GITHUB_RAW = "https://raw.githubusercontent.com"
-MAX_TEXT_CHARS = 20_000
 GITHUB_TEXT_FILES = {".md", ".rst", ".txt", ".toml", ".yaml", ".yml", ".json", ".py", ".js", ".ts"}
 
 
@@ -24,7 +25,7 @@ def _headers() -> dict[str, str]:
     return headers
 
 
-def _get_json(url: str) -> dict | list:
+def _get_json(url: str) -> Any:
     r = requests.get(url, headers=_headers(), timeout=20)
     r.raise_for_status()
     return r.json()

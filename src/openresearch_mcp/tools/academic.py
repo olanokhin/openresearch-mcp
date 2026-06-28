@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import os
 
-import requests
 from bs4 import BeautifulSoup
 
 from openresearch_mcp.formatting import format_untrusted
+from openresearch_mcp.http import fetch_json, tool_safe
 
 
+@tool_safe
 def search_hacker_news(query: str, max_results: int = 10) -> str:
     """Search Hacker News stories and discussions via Algolia API. No API key required.
 
@@ -18,13 +19,13 @@ def search_hacker_news(query: str, max_results: int = 10) -> str:
         max_results: Number of stories to return (1–20, default 10).
     """
     max_results = max(1, min(max_results, 20))
-    r = requests.get(
+    data = fetch_json(
         "https://hn.algolia.com/api/v1/search",
+        source="Hacker News",
         params={"query": query, "tags": "story", "hitsPerPage": max_results},
         timeout=10,
     )
-    r.raise_for_status()
-    hits = r.json().get("hits", [])
+    hits = data.get("hits", [])
     lines = []
     for hit in hits:
         hn_url = f"https://news.ycombinator.com/item?id={hit.get('objectID')}"
@@ -37,6 +38,7 @@ def search_hacker_news(query: str, max_results: int = 10) -> str:
     return format_untrusted("Hacker News", body) if body else "No results found."
 
 
+@tool_safe
 def search_stackoverflow(query: str, max_results: int = 5) -> str:
     """Search Stack Overflow for questions and answers. No API key required (throttled without key).
 
@@ -56,9 +58,13 @@ def search_stackoverflow(query: str, max_results: int = 5) -> str:
     key = os.getenv("STACKEXCHANGE_KEY")
     if key:
         params["key"] = key
-    r = requests.get("https://api.stackexchange.com/2.3/search/advanced", params=params, timeout=15)
-    r.raise_for_status()
-    items = r.json().get("items", [])
+    data = fetch_json(
+        "https://api.stackexchange.com/2.3/search/advanced",
+        source="Stack Overflow",
+        params=params,
+        timeout=15,
+    )
+    items = data.get("items", [])
     lines = []
     for item in items:
         body = BeautifulSoup(item.get("body", ""), "html.parser").get_text()[:400]
@@ -82,6 +88,7 @@ def _reconstruct_abstract(inv_idx: dict | None) -> str:
     return " ".join(words)
 
 
+@tool_safe
 def search_openalex(query: str, max_results: int = 5) -> str:
     """Search OpenAlex for academic papers, books, and datasets. 250M+ works, no API key required.
 
@@ -95,8 +102,9 @@ def search_openalex(query: str, max_results: int = 5) -> str:
     email = os.getenv("OPENALEX_EMAIL", "")
     user_agent = f"openresearch-mcp (mailto:{email})" if email else "openresearch-mcp"
 
-    r = requests.get(
+    data = fetch_json(
         "https://api.openalex.org/works",
+        source="OpenAlex",
         params={
             "search": query,
             "per_page": max_results,
@@ -105,8 +113,7 @@ def search_openalex(query: str, max_results: int = 5) -> str:
         headers={"User-Agent": user_agent},
         timeout=15,
     )
-    r.raise_for_status()
-    works = r.json().get("results", [])
+    works = data.get("results", [])
     lines = []
     for work in works:
         authors = ", ".join(

@@ -41,7 +41,9 @@ Each pass was cross-checked with an independent model to reduce single-reviewer 
 - **As of `>= 0.1.7`:** no known CRITICAL or HIGH findings remain *within the reviewed
   scope*. Remaining items are defense-in-depth or operational controls.
 
-**Current version:** v0.1.8 (security documentation release)
+**Current version:** v0.1.9 — security posture unchanged since the v0.1.7–0.1.8 hardening
+(this release is an internal refactor; it adds no new external-fetch surface — same sources,
+same fixed hosts, SSRF guarding of attacker-controlled URLs unchanged).
 
 ---
 
@@ -119,6 +121,6 @@ issue for undisclosed vulnerabilities. Security reports are treated with high pr
 
 ---
 
-**Last updated:** June 2026 · **Version:** v0.1.8
+**Last updated:** June 2026 · **Version:** v0.1.9
 
 *Security review methodology and tooling: [agent-security-skill](https://github.com/olanokhin/agent-security-skill)*

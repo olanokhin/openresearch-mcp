@@ -11,12 +11,12 @@ from bs4 import BeautifulSoup
 from ddgs import DDGS
 from pypdf import PdfReader
 
+from openresearch_mcp.constants import MAX_TEXT_CHARS
 from openresearch_mcp.formatting import format_untrusted
 from openresearch_mcp.safefetch import UnsafeURLError, safe_get
 
 logger = logging.getLogger(__name__)
 
-MAX_TEXT_CHARS = 20_000
 MAX_PDF_PAGES = 50
 
 

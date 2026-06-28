@@ -6,6 +6,7 @@ import asyncio
 import os
 import time
 from importlib.metadata import version as _pkg_version
+from typing import Any
 
 import requests as _requests
 from fastmcp import FastMCP
@@ -18,6 +19,7 @@ from openresearch_mcp.tools.academic import (
     search_openalex,
     search_stackoverflow,
 )
+from openresearch_mcp.tools.core import get_current_date
 from openresearch_mcp.tools.github import read_repo
 from openresearch_mcp.tools.web import read_pdf, read_url, web_search
 from openresearch_mcp.tools.youtube import get_youtube_transcript
@@ -27,6 +29,15 @@ _READ_ONLY_WEB = ToolAnnotations(
     destructiveHint=False,
     idempotentHint=True,
     openWorldHint=True,
+)
+
+# Local, server-generated tools (no external call). Value changes over time, so
+# not idempotent; closed-world since nothing is fetched.
+_READ_ONLY_LOCAL = ToolAnnotations(
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=False,
+    openWorldHint=False,
 )
 
 mcp = FastMCP(
@@ -48,7 +59,9 @@ mcp = FastMCP(
         "• read_repo — explore a public GitHub repository: returns metadata, README, file tree, and key "
         "config/doc files. Accepts owner/repo shorthand or full GitHub URL.\n"
         "• get_youtube_transcript — fetch captions from a YouTube video for summarization or citation; "
-        "accepts full URLs or bare 11-char video IDs.\n\n"
+        "accepts full URLs or bare 11-char video IDs.\n"
+        "• get_current_date — the current UTC date/time. Call this to anchor any relative request "
+        "(\"last 30 days\", \"since last year\", \"recent\") instead of guessing today's date.\n\n"
         "Optional env vars to increase rate limits: GITHUB_TOKEN (60→5k req/hr), "
         "OPENALEX_EMAIL (polite pool, higher limits), STACKEXCHANGE_KEY (higher SO quota)."
     ),
@@ -102,6 +115,12 @@ mcp.tool(
     annotations=_READ_ONLY_WEB,
 )(get_youtube_transcript)
 
+mcp.tool(
+    title="Get Current Date",
+    tags={"utility", "time"},
+    annotations=_READ_ONLY_LOCAL,
+)(get_current_date)
+
 
 _PROBES: list[tuple[str, str]] = [
     ("duckduckgo",       "https://lite.duckduckgo.com/lite/"),
@@ -133,7 +152,7 @@ async def _probe(name: str, url: str) -> tuple[str, dict]:
 
 
 _HEALTH_TTL = 10.0  # seconds — cap outbound-probe amplification from unauthenticated /health
-_health_cache: dict[str, object] = {"at": 0.0, "payload": None, "status": 503}
+_health_cache: dict[str, Any] = {"at": 0.0, "payload": None, "status": 503}
 _health_lock = asyncio.Lock()
 
 

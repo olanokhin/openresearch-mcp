@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 import requests as req_lib
 
 from openresearch_mcp.safefetch import UnsafeURLError

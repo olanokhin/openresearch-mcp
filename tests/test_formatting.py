@@ -37,7 +37,7 @@ def test_hacker_news_wraps_results():
     resp = MagicMock()
     resp.json.return_value = {"hits": [{"title": "X", "objectID": "1", "url": "https://x.test"}]}
     resp.raise_for_status.return_value = None
-    with patch("openresearch_mcp.tools.academic.requests.get", return_value=resp):
+    with patch("openresearch_mcp.http.requests.get", return_value=resp):
         result = search_hacker_news("q")
     assert _NOTICE_MARKER in result
 
@@ -48,6 +48,6 @@ def test_no_results_is_not_wrapped():
     resp = MagicMock()
     resp.json.return_value = {"hits": []}
     resp.raise_for_status.return_value = None
-    with patch("openresearch_mcp.tools.academic.requests.get", return_value=resp):
+    with patch("openresearch_mcp.http.requests.get", return_value=resp):
         result = search_hacker_news("q")
     assert result == "No results found."

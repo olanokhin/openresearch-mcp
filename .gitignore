@@ -7,3 +7,8 @@ build/
 *.egg-info/
 .env
 .env.local
+
+# Local AI-agent tooling — never tracked, never published.
+.agents/
+.claude/
+.pytest_cache/
