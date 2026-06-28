@@ -20,6 +20,7 @@ Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, O
 | `search_stackoverflow` | Stack Overflow API | Set `STACKEXCHANGE_KEY` for higher quota |
 | `read_repo` | GitHub public repos | README + file tree + key docs; set `GITHUB_TOKEN` for 5k req/hr |
 | `get_youtube_transcript` | YouTube captions | Accepts full URLs, `youtu.be/` links, shorts, or bare video IDs |
+| `get_current_date` | Server clock | Current UTC date/time — anchors relative requests ("last 30 days") instead of guessing |
 
 ## Install
 
@@ -171,6 +172,7 @@ curl http://localhost:8000/health
 
 - **Reddit / Zenodo**: block unauthenticated scraping — not included
 - **YouTube**: rate-limited at scale; works well for personal/low-volume use
+- **PDF parsing**: `read_pdf` parses untrusted PDFs in-process (with download-size and page caps). Fine for personal/low-volume use; a public high-volume deployment should isolate parsing in a subprocess with CPU/memory limits.
 
 ## Roadmap
 
