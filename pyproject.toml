@@ -52,7 +52,7 @@ Repository = "https://github.com/olanokhin/openresearch-mcp"
 "Bug Tracker" = "https://github.com/olanokhin/openresearch-mcp/issues"
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-asyncio", "httpx", "ruff>=0.6", "mypy>=1.11", "types-requests"]
+dev = ["pytest", "ruff>=0.6", "mypy>=1.11", "types-requests"]
 
 [project.scripts]
 openresearch-mcp = "openresearch_mcp.server:main"
@@ -96,4 +96,4 @@ markers = [
 ]
 
 [tool.uv]
-dev-dependencies = ["pytest", "pytest-asyncio", "httpx", "ruff>=0.6", "mypy>=1.11", "types-requests"]
+dev-dependencies = ["pytest", "ruff>=0.6", "mypy>=1.11", "types-requests"]
