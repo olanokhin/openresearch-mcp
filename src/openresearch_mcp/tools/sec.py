@@ -9,6 +9,8 @@ good citizen; a default is used otherwise. Data is annual figures pulled from
 from __future__ import annotations
 
 import os
+from typing import Any
+from urllib.parse import quote as urlquote
 
 from openresearch_mcp.constants import MAX_TEXT_CHARS
 from openresearch_mcp.formatting import format_untrusted
@@ -121,8 +123,77 @@ def get_company_financials(ticker: str) -> str:
         sections.append("\n".join(lines))
 
     if not sections:
-        return f"No annual XBRL financial data found for {name} ({ticker.strip().upper()})."
+        return f"No annual XBRL financial data found for {ticker.strip().upper()}."
 
     header = f"{name} ({ticker.strip().upper()}) — annual fundamentals from SEC 10-K filings (USD):"
     body = header + "\n\n" + "\n\n".join(sections)
     return format_untrusted("SEC EDGAR", body[:MAX_TEXT_CHARS])
+
+
+_EFTS_URL = "https://efts.sec.gov/LATEST/search-index"
+
+
+def _filing_url(hit: dict) -> str | None:
+    """Build a direct document URL from an efts hit (``_id`` = 'accession:filename')."""
+    doc_id = str(hit.get("_id") or "")
+    src = hit.get("_source") if isinstance(hit.get("_source"), dict) else {}
+    ciks = src.get("ciks") if isinstance(src, dict) else None
+    if ":" not in doc_id or not isinstance(ciks, list) or not ciks:
+        return None
+    accession, filename = doc_id.split(":", 1)
+    cik = str(ciks[0]).lstrip("0")
+    if not cik or not filename:
+        return None
+    accession_dir = urlquote(accession.replace("-", ""), safe="")
+    filename_safe = urlquote(filename, safe="")
+    return f"https://www.sec.gov/Archives/edgar/data/{cik}/{accession_dir}/{filename_safe}"
+
+
+@tool_safe
+def search_sec_filings(query: str, forms: str = "", max_results: int = 10) -> str:
+    """Full-text search of SEC EDGAR filings by keyword/company. No API key.
+
+    Finds 10-K / 10-Q / 8-K (and other) filings mentioning a term, with a direct
+    document URL to feed into read_url or read_pdf.
+
+    Args:
+        query: Search terms, e.g. "supply chain risk" or a company name.
+        forms: Optional comma-separated form filter, e.g. "10-K" or "10-K,10-Q".
+        max_results: Number of filings to return (1–25, default 10).
+    """
+    if not query or not query.strip():
+        return "Provide search terms, e.g. 'climate risk' or a company name."
+    try:
+        n = max(1, min(int(max_results), 25))
+    except (TypeError, ValueError):
+        return f"Invalid max_results {max_results!r}; provide a whole number (1–25)."
+
+    params: dict[str, Any] = {"q": query.strip()}
+    if forms and forms.strip():
+        params["forms"] = forms.strip()
+    data = fetch_json(
+        _EFTS_URL, source="SEC", headers={"User-Agent": _sec_ua()}, params=params, timeout=20
+    )
+
+    hits_root = data.get("hits") if isinstance(data, dict) else None
+    hits = hits_root.get("hits") if isinstance(hits_root, dict) else None
+    hits = [h for h in hits if isinstance(h, dict)] if isinstance(hits, list) else []
+    if not hits:
+        return f"No SEC filings found for {query!r}."
+
+    total = (hits_root.get("total") or {}).get("value") if isinstance(hits_root, dict) else None
+    lines = [f'Found {total} SEC filings for "{query.strip()}" (showing up to {n}):']
+    for hit in hits[:n]:
+        src = hit.get("_source") if isinstance(hit.get("_source"), dict) else {}
+        names = src.get("display_names") if isinstance(src, dict) else None
+        who = names[0] if isinstance(names, list) and names else "Unknown filer"
+        meta = " · ".join(str(x) for x in (src.get("form"), src.get("file_date")) if x)
+        entry = [f"\n{who}"]
+        if meta:
+            entry.append(meta)
+        url = _filing_url(hit)
+        if url:
+            entry.append(f"Document (feed to read_url/read_pdf): {url}")
+        lines.append("\n".join(entry))
+
+    return format_untrusted("SEC EDGAR", "\n".join(lines)[:MAX_TEXT_CHARS])

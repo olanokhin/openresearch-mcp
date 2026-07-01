@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
-from openresearch_mcp.http import SourceError, fetch_json, reset_http_state, tool_safe
+from openresearch_mcp.http import SourceError, fetch_json, reset_http_state, scrub_log, tool_safe
 
 
 def _resp(*, json_data=None, status=200, text="", raise_http=False) -> MagicMock:
@@ -102,6 +102,23 @@ class TestToolSafe:
 
         with pytest.raises(KeyError):
             tool()
+
+    def test_scrubs_newlines_before_logging(self, caplog):
+        # PIPE11: exc.log (URL/response snippet) must not forge or split log lines.
+        import logging as _logging
+
+        @tool_safe
+        def tool() -> str:
+            raise SourceError("X", public="down", log="real line\nFORGED: fake audit entry")
+
+        with caplog.at_level(_logging.WARNING):
+            tool()
+        assert all("\n" not in r.getMessage() for r in caplog.records)
+        assert "FORGED: fake audit entry" in caplog.text  # content kept, just flattened
+
+
+def test_scrub_log_flattens_cr_lf():
+    assert scrub_log("a\nb\r\nc") == "a b  c"
 
 
 class TestCacheHardening:

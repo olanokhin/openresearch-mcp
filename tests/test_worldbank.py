@@ -146,8 +146,10 @@ class TestGetCountryIndicator:
     def test_worldbank_error_payload(self):
         with patch(PATCH, return_value=_ok(_WB_ERROR)):
             result = get_country_indicator("US", "BOGUS.CODE")
-        assert "World Bank error" in result
+        assert "could not process" in result.lower()
         assert "search_indicators" in result
+        # PIPE01: the external WB message must NOT be surfaced unframed.
+        assert "not valid" not in result
 
     def test_no_rows(self):
         with patch(PATCH, return_value=_ok([{"total": 0}, None])):

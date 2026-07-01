@@ -12,3 +12,6 @@ build/
 .agents/
 .claude/
 .pytest_cache/
+
+# macOS
+.DS_Store

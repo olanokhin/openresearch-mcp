@@ -7,12 +7,15 @@ geocoding (name → lat/lon) and the forecast API.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from openresearch_mcp.constants import MAX_TEXT_CHARS
 from openresearch_mcp.formatting import format_untrusted
-from openresearch_mcp.http import fetch_json, tool_safe
+from openresearch_mcp.http import fetch_json, scrub_log, tool_safe
 from openresearch_mcp.identifiers import normalize_date_range
+
+logger = logging.getLogger(__name__)
 
 # WMO weather interpretation codes → human text, so the agent reads "Clear sky"
 # rather than a bare integer. https://open-meteo.com/en/docs (WMO Weather code)
@@ -88,9 +91,11 @@ def get_weather_forecast(location: str, days: int = 7) -> str:
         },
         timeout=15,
     )
-    # Open-Meteo signals bad params with {"error": true, "reason": ...}.
+    # Open-Meteo signals bad params with {"error": true, "reason": ...}. Log the raw
+    # reason (untrusted); return a generic message so external text isn't surfaced unframed.
     if isinstance(data, dict) and data.get("error"):
-        return f"Weather service error: {data.get('reason', 'unknown')}"
+        logger.warning("Open-Meteo forecast error for %s: %s", location, scrub_log(data.get("reason")))
+        return "The weather service rejected the request. Check the location and try again."
 
     label = ", ".join(p for p in (place.get("name"), place.get("country")) if p)
     lines = [f"Weather for {label} ({place['latitude']:.2f}, {place['longitude']:.2f})"]
@@ -190,7 +195,8 @@ def get_historical_weather(
         timeout=30,
     )
     if isinstance(data, dict) and data.get("error"):
-        return f"Weather service error: {data.get('reason', 'unknown')}"
+        logger.warning("Open-Meteo archive error for %s: %s", location, scrub_log(data.get("reason")))
+        return "The weather service rejected the request. Check the location and date range."
 
     daily = data.get("daily") or {}
     dates = daily.get("time") or []

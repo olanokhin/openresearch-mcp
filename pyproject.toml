@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openresearch-mcp"
-version = "0.1.9"
-description = "Zero-auth multi-source research MCP server — web, GitHub, Hacker News, Stack Overflow, arXiv, OpenAlex, YouTube transcripts, and more."
+version = "0.2.0"
+description = "Zero-auth cross-domain research MCP server — web, academic, GitHub, news, weather, macro/finance, SEC, biomedical, Bluesky, YouTube, and more."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.11"
@@ -20,6 +20,12 @@ keywords = [
     "openalex",
     "duckduckgo",
     "github",
+    "news",
+    "weather",
+    "finance",
+    "sec",
+    "biomedical",
+    "bluesky",
     "youtube",
 ]
 classifiers = [

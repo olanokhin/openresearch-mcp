@@ -226,6 +226,11 @@ def fetch_json(
             lock.release()
 
 
+def scrub_log(value: object) -> str:
+    """Flatten CR/LF so external/user content can't forge or split a log line (PIPE11)."""
+    return str(value).replace("\n", " ").replace("\r", " ")
+
+
 def tool_safe(func: Callable[..., str]) -> Callable[..., str]:
     """Wrap a tool so a :class:`SourceError` becomes a clean string, not a raised error.
 
@@ -239,7 +244,9 @@ def tool_safe(func: Callable[..., str]) -> Callable[..., str]:
         try:
             return func(*args, **kwargs)
         except SourceError as exc:
-            logger.warning("%s failed: %s", exc.source, exc.log)
+            # exc.log carries a request URL (with user query terms) / response snippet →
+            # scrub newlines before logging so it can't forge audit lines.
+            logger.warning("%s failed: %s", exc.source, scrub_log(exc.log))
             return exc.public
 
     return wrapper

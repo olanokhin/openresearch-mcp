@@ -88,8 +88,9 @@ class TestGetWeatherForecast:
         err = {"error": True, "reason": "Latitude must be in range"}
         with patch(PATCH, side_effect=[_ok(_geo()), _ok(err)]):
             result = get_weather_forecast("Berlin")
-        assert "Weather service error" in result
-        assert "Latitude must be in range" in result
+        assert "rejected the request" in result
+        # PIPE01: the external 'reason' must NOT be surfaced unframed to the agent.
+        assert "Latitude must be in range" not in result
 
     def test_transport_failure_returns_graceful_string(self):
         with patch(PATCH, side_effect=requests.ConnectionError("boom")):

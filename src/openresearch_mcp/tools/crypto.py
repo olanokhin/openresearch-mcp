@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import quote as urlquote
 
 from openresearch_mcp.formatting import format_untrusted
 from openresearch_mcp.http import fetch_json, tool_safe
@@ -84,7 +85,9 @@ def get_crypto_price(coin: str, vs: str = "usd", days: int | None = None) -> str
     except (TypeError, ValueError):
         return f"Invalid days {days!r}; provide a whole number of days (1–365)."
     data = fetch_json(
-        f"{_COINGECKO}/coins/{coin_id}/market_chart",
+        # coin_id is user-derived → URL-encode the path segment (fixed host, but keep
+        # special chars from reaching an unintended endpoint).
+        f"{_COINGECKO}/coins/{urlquote(coin_id, safe='')}/market_chart",
         source="CoinGecko",
         params={"vs_currency": quote, "days": n_days},
         timeout=20,

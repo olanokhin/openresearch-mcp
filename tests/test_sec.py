@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
-from openresearch_mcp.tools.sec import get_company_financials
+from openresearch_mcp.tools.sec import _filing_url, get_company_financials, search_sec_filings
 
 PATCH = "openresearch_mcp.http.requests.get"
 
@@ -144,6 +144,93 @@ class TestGetCompanyFinancials:
     def test_transport_failure_graceful(self):
         with patch(PATCH, side_effect=requests.ConnectionError("boom")):
             assert "Could not reach" in get_company_financials("AAPL")
+
+
+def _hit(*, cik="0000035527", acc="0000035527-22-000119", filename="doc10-k.htm",
+         form="10-K", date="2022-02-25", name="FIFTH THIRD BANCORP  (FITB)  (CIK 0000035527)") -> dict:
+    return {"_id": f"{acc}:{filename}",
+            "_source": {"ciks": [cik], "display_names": [name], "form": form, "file_date": date}}
+
+
+def _efts(hits: list, total: int | None = None) -> dict:
+    return {"hits": {"total": {"value": total if total is not None else len(hits)}, "hits": hits}}
+
+
+class TestFilingUrl:
+    def test_builds_document_url(self):
+        url = _filing_url(_hit())
+        assert url == "https://www.sec.gov/Archives/edgar/data/35527/000003552722000119/doc10-k.htm"
+
+    def test_missing_colon_returns_none(self):
+        assert _filing_url({"_id": "noColonHere", "_source": {"ciks": ["1"]}}) is None
+
+    def test_missing_ciks_returns_none(self):
+        assert _filing_url({"_id": "a:b", "_source": {}}) is None
+
+    def test_url_encodes_external_path_segments(self):
+        url = _filing_url(_hit(filename="risk report 10-k.htm"))
+        assert url.endswith("/risk%20report%2010-k.htm")
+
+
+class TestSearchSecFilings:
+    def test_success_with_document_url(self):
+        with patch(PATCH, return_value=_ok(_efts([_hit()], total=1450))):
+            result = search_sec_filings("climate risk", forms="10-K")
+        assert "Found 1450 SEC filings" in result
+        assert "FIFTH THIRD BANCORP" in result
+        assert "10-K · 2022-02-25" in result
+        assert "edgar/data/35527/000003552722000119/doc10-k.htm" in result
+        assert result.startswith("[untrusted SEC EDGAR")
+
+    def test_forms_param_passed(self):
+        with patch(PATCH, return_value=_ok(_efts([_hit()]))) as g:
+            search_sec_filings("x", forms="10-K,10-Q")
+        assert g.call_args[1]["params"]["forms"] == "10-K,10-Q"
+
+    def test_no_forms_param_when_omitted(self):
+        with patch(PATCH, return_value=_ok(_efts([_hit()]))) as g:
+            search_sec_filings("x")
+        assert "forms" not in g.call_args[1]["params"]
+
+    def test_empty_query(self):
+        assert "Provide search terms" in search_sec_filings("  ")
+
+    def test_no_hits(self):
+        with patch(PATCH, return_value=_ok(_efts([]))):
+            assert "No SEC filings found" in search_sec_filings("zzzqwerty")
+
+    def test_max_results_clamped_and_sliced(self):
+        hits = [_hit(acc=f"000-{i}", filename=f"f{i}.htm") for i in range(30)]
+        with patch(PATCH, return_value=_ok(_efts(hits))):
+            result = search_sec_filings("x", max_results=999)
+        assert result.count("Document (feed to read_url/read_pdf)") == 25  # clamped to 25
+
+    def test_non_numeric_max_results(self):
+        with patch(PATCH, side_effect=AssertionError("no network")):
+            assert "Invalid max_results" in search_sec_filings("x", max_results="abc")  # type: ignore[arg-type]
+
+    def test_non_dict_hit_skipped(self):
+        with patch(PATCH, return_value=_ok(_efts([_hit(), "not-a-dict"]))):
+            result = search_sec_filings("x")
+        assert "FIFTH THIRD BANCORP" in result
+
+    def test_malformed_id_omits_url_but_keeps_entry(self):
+        bad = {"_id": "no-colon", "_source": {"ciks": ["1"], "display_names": ["ACME"], "form": "8-K"}}
+        with patch(PATCH, return_value=_ok(_efts([bad]))):
+            result = search_sec_filings("x")
+        assert "ACME" in result
+        assert "Document (feed" not in result
+
+    def test_transport_failure_graceful(self):
+        with patch(PATCH, side_effect=requests.ConnectionError("boom")):
+            assert "Could not reach" in search_sec_filings("x")
+
+
+@pytest.mark.integration
+def test_live_sec_filings():
+    result = search_sec_filings("climate risk", forms="10-K", max_results=3)
+    assert isinstance(result, str) and result
+    assert ("SEC filings" in result and "edgar/data" in result) or "SEC" in result
 
 
 @pytest.mark.integration

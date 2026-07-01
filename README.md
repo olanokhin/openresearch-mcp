@@ -6,7 +6,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/olanokhin/openresearch-mcp/ci.yml?branch=main&label=CI)](https://github.com/olanokhin/openresearch-mcp/actions/workflows/ci.yml)
 [![MCP Registry](https://img.shields.io/badge/MCP_Registry-listed-blue)](https://registry.modelcontextprotocol.io)
 
-Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, OpenCode, Open WebUI, or any MCP-compatible agent — no API keys required.
+Zero-auth cross-domain research MCP server. Works with Claude Desktop, Cursor, OpenCode, Open WebUI, or any MCP-compatible agent — no API keys required.
 
 ## Tools
 
@@ -33,6 +33,7 @@ Zero-auth multi-source research MCP server. Works with Claude Desktop, Cursor, O
 | `get_bluesky_profile` | Bluesky | Full bio + follower/post counts for a handle; no key |
 | `read_bluesky_feed` | Bluesky | A user's recent original posts (reposts/replies filtered); no key |
 | `get_company_financials` | SEC EDGAR | Annual revenue, earnings, assets for a US-listed company by ticker (10-K filings); no key (set `SEC_USER_AGENT` for heavy use) |
+| `search_sec_filings` | SEC EDGAR | Full-text search of filings (10-K/10-Q/8-K) by keyword/company; returns a document URL to feed into `read_url`/`read_pdf`; no key |
 
 ## Install
 

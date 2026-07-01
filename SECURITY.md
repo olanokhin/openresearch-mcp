@@ -13,7 +13,8 @@ the pre-hardening code**. Pin accordingly.
 |---------------|--------|
 | `< 0.1.6`     | **Vulnerable** — unvalidated URL fetching (SSRF), unbounded downloads, no untrusted-content framing. Do not use. |
 | `0.1.6`       | Core hardening present (SSRF validation, framing, byte caps, loopback default). Missing some defense-in-depth (IPv4-mapped / NAT64 blocking). Upgrade recommended. |
-| `>= 0.1.7`    | **Fully hardened.** Recommended. |
+| `0.1.7`–`0.1.9` | **Fully hardened** core (8 tools). `0.1.9` adds the shared `http` transport (single error contract, throttle, bounded cache). |
+| `>= 0.2.0`    | **Fully hardened + cross-domain expansion.** 13 new zero-auth fixed-host tools (weather, finance, macro, news, biomed, social, SEC filings). OWASP-reviewed as a wave: no CRITICAL/HIGH; framing extended to error paths, log-newline scrubbing, URL path-segment encoding. Recommended. |
 
 Always install the latest:
 
@@ -41,9 +42,12 @@ Each pass was cross-checked with an independent model to reduce single-reviewer 
 - **As of `>= 0.1.7`:** no known CRITICAL or HIGH findings remain *within the reviewed
   scope*. Remaining items are defense-in-depth or operational controls.
 
-**Current version:** v0.1.9 — security posture unchanged since the v0.1.7–0.1.8 hardening
-(this release is an internal refactor; it adds no new external-fetch surface — same sources,
-same fixed hosts, SSRF guarding of attacker-controlled URLs unchanged).
+**Current version:** v0.2.0 — the core SSRF/framing hardening (`>= 0.1.7`) is unchanged.
+This wave adds 13 new **fixed-host, zero-auth** tools; because their hosts are trusted and
+hardcoded (not attacker-controlled), they deliberately do **not** use `safefetch` — the SSRF
+threat model is unchanged. The wave had its own OWASP pass: **no CRITICAL/HIGH**, and the
+MEDIUM/LOW findings (unframed external error fields, log-newline injection, unencoded URL
+path segments) were fixed before release (see v0.2.0 below).
 
 ---
 
@@ -95,6 +99,18 @@ findings from CRITICAL to none:
 Full regression suite passing across Python 3.11–3.13, including SSRF (rebinding, redirect
 chains, round-robin DNS, metadata-endpoint access) and untrusted-content framing tests.
 
+**v0.1.9 — expansion infrastructure**
+- Shared fixed-host HTTP transport with one error contract (`SourceError`), hard timeouts, non-JSON handling, bounded cache, and per-source throttling hooks
+- Identifier normalization for country/date/year/currency inputs used by the 0.2.0 tools
+- `get_current_date` utility so agents can anchor relative requests without guessing
+- CLI transport flags (`--host`, `--port`, `--stdio`) and CI/type-check hardening
+
+**v0.2.0 — zero-auth cross-domain expansion**
+- Added 13 zero-auth domain tools: weather forecast/history, World Bank indicator search/fetch, FX, crypto, GDELT news, Europe PMC, Bluesky user/profile/feed, SEC company financials, and SEC filing search
+- Added live integration coverage across SEC, GDELT, Open-Meteo, Frankfurter, CoinGecko, World Bank, Europe PMC, Bluesky, and cross-domain chains
+- Extended OWASP pass to new fixed-host tools: no CRITICAL/HIGH findings remained before release
+- Fixed release-wave findings: external upstream error fields are not surfaced unframed, log newlines are scrubbed before server logging, and user-derived URL path segments are encoded
+
 ---
 
 ### Threats Evaluated and Not Applicable
@@ -121,6 +137,6 @@ issue for undisclosed vulnerabilities. Security reports are treated with high pr
 
 ---
 
-**Last updated:** June 2026 · **Version:** v0.1.9
+**Last updated:** July 2026 · **Version:** v0.2.0
 
 *Security review methodology and tooling: [agent-security-skill](https://github.com/olanokhin/agent-security-skill)*

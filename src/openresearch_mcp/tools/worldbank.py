@@ -8,12 +8,16 @@ answers some errors with HTTP 200 + a ``message`` payload, so both are handled h
 
 from __future__ import annotations
 
+import logging
 from typing import Any
+from urllib.parse import quote as urlquote
 
 from openresearch_mcp.constants import MAX_TEXT_CHARS
 from openresearch_mcp.formatting import format_untrusted
-from openresearch_mcp.http import fetch_json, tool_safe
+from openresearch_mcp.http import fetch_json, scrub_log, tool_safe
 from openresearch_mcp.identifiers import normalize_country, normalize_year, today_iso
+
+logger = logging.getLogger(__name__)
 
 _WB_BASE = "https://api.worldbank.org/v2"
 # WDI (source 2) is the canonical ~1,500-indicator development set. Searching the
@@ -60,7 +64,8 @@ def search_indicators(query: str) -> str:
     )
     err = _wb_error(data)
     if err:
-        return f"World Bank error: {err}"
+        logger.warning("World Bank error (search): %s", scrub_log(err))
+        return "World Bank could not process the request; try again shortly."
     rows = data[1] if isinstance(data, list) and len(data) > 1 else None
     if not rows:
         return "Indicator catalog unavailable; try again shortly."
@@ -129,14 +134,16 @@ def get_country_indicator(
     if date_range:
         params["date"] = date_range
     data = fetch_json(
-        f"{_WB_BASE}/country/{iso2}/indicator/{code}",
+        # code is user-supplied → URL-encode the path segment (fixed host).
+        f"{_WB_BASE}/country/{iso2}/indicator/{urlquote(code, safe='')}",
         source="World Bank",
         params=params,
         timeout=20,
     )
     err = _wb_error(data)
     if err:
-        return f"World Bank error: {err} (check the indicator code via search_indicators)."
+        logger.warning("World Bank error (indicator): %s", scrub_log(err))
+        return "World Bank could not process the request. Check the indicator code via search_indicators."
     rows = data[1] if isinstance(data, list) and len(data) > 1 else None
     if not rows:
         return f"No data for {code} in {country!r} for that period."

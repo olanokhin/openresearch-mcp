@@ -2,17 +2,17 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.olanokhin/openresearch-mcp",
   "title": "OpenResearch MCP",
-  "description": "Zero-auth research MCP server — web, GitHub, HN, Stack Overflow, OpenAlex, YouTube. No keys needed.",
+  "description": "Zero-auth cross-domain research MCP server — web, academic, GitHub, news, weather, macro/finance, SEC, biomedical, Bluesky, YouTube. No keys needed.",
   "repository": {
     "url": "https://github.com/olanokhin/openresearch-mcp",
     "source": "github"
   },
-  "version": "0.1.9",
+  "version": "0.2.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "openresearch-mcp",
-      "version": "0.1.9",
+      "version": "0.2.0",
       "transport": {
         "type": "stdio"
       },
@@ -36,6 +36,13 @@
           "description": "Stack Exchange API key for higher daily quota on Stack Overflow searches",
           "isRequired": false,
           "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "SEC_USER_AGENT",
+          "description": "Your contact email/string for SEC EDGAR fair-access; a default is used otherwise",
+          "isRequired": false,
+          "isSecret": false,
           "format": "string"
         }
       ]
