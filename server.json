@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.olanokhin/openresearch-mcp",
   "title": "OpenResearch MCP",
-  "description": "Zero-auth cross-domain research MCP server — web, academic, GitHub, news, weather, macro/finance, SEC, biomedical, Bluesky, YouTube. No keys needed.",
+  "description": "Zero-auth research MCP: web, academic, finance, news, weather, macro, social, SEC. No keys.",
   "repository": {
     "url": "https://github.com/olanokhin/openresearch-mcp",
     "source": "github"
