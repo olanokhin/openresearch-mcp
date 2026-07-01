@@ -10,30 +10,35 @@ Zero-auth cross-domain research MCP server. Works with Claude Desktop, Cursor, O
 
 ## Tools
 
-| Tool | Source | Notes |
-| ---- | ------ | ----- |
-| `web_search` | DuckDuckGo | Optional `site=` param to scope to a domain (e.g. `arxiv.org`) |
-| `read_url` | Any webpage | Strips nav/scripts, returns clean text |
-| `read_pdf` | Any PDF or arXiv | Accepts `/abs/`, `/pdf/`, `/html/` arXiv URLs interchangeably |
-| `search_openalex` | OpenAlex | 250M+ works, zero rate limiting; set `OPENALEX_EMAIL` for polite pool |
-| `search_hacker_news` | HN via Algolia | Story search with points + comment counts |
-| `search_stackoverflow` | Stack Overflow API | Set `STACKEXCHANGE_KEY` for higher quota |
-| `read_repo` | GitHub public repos | README + file tree + key docs; set `GITHUB_TOKEN` for 5k req/hr |
-| `get_youtube_transcript` | YouTube captions | Accepts full URLs, `youtu.be/` links, shorts, or bare video IDs |
-| `get_current_date` | Server clock | Current UTC date/time — anchors relative requests ("last 30 days") instead of guessing |
-| `get_weather_forecast` | Open-Meteo | Current conditions + up to 16-day forecast by place name; no key. See licensing note below |
-| `get_historical_weather` | Open-Meteo | Climate series since 1940 for a place + date range, aggregated monthly/yearly; no key. See licensing note below |
-| `search_indicators` | World Bank | Find an indicator code by keyword ("GDP", "migration"); feed into `get_country_indicator` |
-| `get_country_indicator` | World Bank | Yearly socio-economic series (GDP, population, inflation, migration, life expectancy…) by country + code; no key |
-| `get_fx_rate` | Frankfurter (ECB) | Currency rates: latest, a historical date, or a date-range series (downsample week/month); no key |
-| `get_crypto_price` | CoinGecko | Crypto price (current or daily history) by coin id/symbol vs a quote currency; no key |
-| `search_news` | GDELT | Fresh global news on a topic (multilingual); returns articles to feed into `read_url`; no key (rate-limited ~1/5s) |
-| `search_europepmc` | Europe PMC | Biomedical/life-science papers; flags open-access and gives a PDF URL to feed into `read_pdf`; no key |
-| `search_bluesky_users` | Bluesky | Find researcher/dev profiles by name, handle, or bio; no key |
-| `get_bluesky_profile` | Bluesky | Full bio + follower/post counts for a handle; no key |
-| `read_bluesky_feed` | Bluesky | A user's recent original posts (reposts/replies filtered); no key |
-| `get_company_financials` | SEC EDGAR | Annual revenue, earnings, assets for a US-listed company by ticker (10-K filings); no key (set `SEC_USER_AGENT` for heavy use) |
-| `search_sec_filings` | SEC EDGAR | Full-text search of filings (10-K/10-Q/8-K) by keyword/company; returns a document URL to feed into `read_url`/`read_pdf`; no key |
+`Chars` / `~Tok` = each tool's full definition (name + description + JSON input schema) as injected into the agent context on every request (not the Notes text). `~Tok ≈ chars / 4`.
+
+| Tool | Source | Notes | Chars | ~Tok |
+| ---- | ------ | ----- | ----: | ---: |
+| `web_search` | DuckDuckGo | Optional `site=` param to scope to a domain (e.g. `arxiv.org`) | 111 | 28 |
+| `read_url` | Any webpage | Strips nav/scripts, returns clean text | 108 | 27 |
+| `read_pdf` | Any PDF or arXiv | Accepts `/abs/`, `/pdf/`, `/html/` arXiv URLs interchangeably | 133 | 33 |
+| `search_openalex` | OpenAlex | 250M+ works, zero rate limiting; set `OPENALEX_EMAIL` for polite pool | 234 | 58 |
+| `search_hacker_news` | HN via Algolia | Story search with points + comment counts | 148 | 37 |
+| `search_stackoverflow` | Stack Overflow API | Set `STACKEXCHANGE_KEY` for higher quota | 163 | 41 |
+| `read_repo` | GitHub public repos | README + file tree + key docs; set `GITHUB_TOKEN` for 5k req/hr | 223 | 56 |
+| `get_youtube_transcript` | YouTube captions | Accepts full URLs, `youtu.be/` links, shorts, or bare video IDs | 143 | 36 |
+| `get_current_date` | Server clock | Current UTC date/time — anchors relative requests ("last 30 days") instead of guessing | 535 | 134 |
+| `get_weather_forecast` | Open-Meteo | Current conditions + up to 16-day forecast by place name; no key. See licensing note below | 139 | 35 |
+| `get_historical_weather` | Open-Meteo | Climate series since 1940 for a place + date range, aggregated monthly/yearly; no key. See licensing note below | 318 | 80 |
+| `search_indicators` | World Bank | Find an indicator code by keyword ("GDP", "migration"); feed into `get_country_indicator` | 335 | 84 |
+| `get_country_indicator` | World Bank | Yearly socio-economic series (GDP, population, inflation, migration, life expectancy…) by country + code; no key | 147 | 37 |
+| `get_fx_rate` | Frankfurter (ECB) | Currency rates: latest, a historical date, or a date-range series (downsample week/month); no key | 140 | 35 |
+| `get_crypto_price` | CoinGecko | Crypto price (current or daily history) by coin id/symbol vs a quote currency; no key | 140 | 35 |
+| `search_news` | GDELT | Fresh global news on a topic (multilingual); returns articles to feed into `read_url`; no key (rate-limited ~1/5s) | 276 | 69 |
+| `search_europepmc` | Europe PMC | Biomedical/life-science papers; flags open-access and gives a PDF URL to feed into `read_pdf`; no key | 281 | 70 |
+| `search_bluesky_users` | Bluesky | Find researcher/dev profiles by name, handle, or bio; no key | 142 | 36 |
+| `get_bluesky_profile` | Bluesky | Full bio + follower/post counts for a handle; no key | 268 | 67 |
+| `read_bluesky_feed` | Bluesky | A user's recent original posts (reposts/replies filtered); no key | 148 | 37 |
+| `get_company_financials` | SEC EDGAR | Annual revenue, earnings, assets for a US-listed company by ticker (10-K filings); no key (set `SEC_USER_AGENT` for heavy use) | 327 | 82 |
+| `search_sec_filings` | SEC EDGAR | Full-text search of filings (10-K/10-Q/8-K) by keyword/company; returns a document URL to feed into `read_url`/`read_pdf`; no key | 266 | 66 |
+| **All 22 tool definitions** | | | **4,725** | **~1,181** |
+| Server `instructions` | | selection guide + chaining recipes | **3,525** | **~881** |
+| **Total per request** | | ≈ 1% of a 200K context window | **8,250** | **~2,062** |
 
 ## Install
 
